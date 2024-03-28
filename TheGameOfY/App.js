@@ -7,7 +7,7 @@ const App = () => {
   const boardRef = useRef(null); // Reference to the board's TouchableOpacity
 
 
-  function findClosestPiece({left, top}) {
+  function findClosestPiece(left, top) {
     let minDistance = Infinity;
     let closestPiece = null;
   
@@ -32,7 +32,9 @@ const App = () => {
       const top = evt.nativeEvent.pageY - pageY - 10;
 
 
-      closestPiece = findClosestPiece(left, top)
+      const closestPiece = findClosestPiece(left, top)
+
+      console.log(closestPiece)
       
       // console.log(pageX, pageY)
       // console.log(evt.nativeEvent.pageX, evt.nativeEvent.pageY)
@@ -84,14 +86,14 @@ const App = () => {
         <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
           <Image source={require('./assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
 
-          {boardConst.map(
+          {/* {boardConst.map(
             piece => (
               piece.neighbors.map(
                 neighbors => 
                 <LineBetweenTwoPoints x1={piece.position.left} y1={piece.position.top} x2={boardConst[neighbors].position.left} y2={boardConst[neighbors].position.top} />
               )    
             )
-          )}
+          )} */}
         </TouchableOpacity>
 
         {pieces.map(piece => (
