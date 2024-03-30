@@ -1,14 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, Alert, View, Text } from 'react-native';
 import IllegalMoveBanner from './IllegalMoveBanner';
+import { retrieveGameState, saveGameState } from './database/db_access';
 
 const App = () => {
-  const [playerTurn, setPlayerTurn] = useState(true); // true for Player 1's turn, false for Player 2
   const [pieces, setPieces] = useState([]); // Array to hold piece objects
   const [board, setBoard] = useState(boardConst);
   const [showBanner, setShowBanner] = useState(false);
   const boardRef = useRef(null); // Reference to the board's TouchableOpacity
-
 
   function findClosestPiece(left, top) {
     let minDistance = Infinity;
@@ -37,35 +36,18 @@ const App = () => {
 
       const closestPiece = findClosestPiece(left, top)
 
-      console.log(closestPiece)
       
       if (board[closestPiece.id].player != -1) {
         setShowBanner(true);
-        console.log(showBanner)
         return
       }
 
-      // console.log(pageX, pageY)
-      // console.log(evt.nativeEvent.pageX, evt.nativeEvent.pageY)
-      // console.log(left, top)
-
       // Add the new piece to the array of pieces
-      const newPiece = {
-        id: pieces.length, // Simple unique identifier for each piece
-        player: playerTurn ? 1 : 2, // Determine which player the piece belongs to
-        position: closestPiece.position,
-      };
-      setPieces([...pieces, newPiece]);
+      setPieces([...pieces, closestPiece]);
+      saveGameState([...pieces, closestPiece], "123");
 
-      board[closestPiece.id].player = playerTurn ? 1 : 2
-      setBoard(board)
-
-      console.log(board)
-
-      Alert.alert(`Player ${playerTurn ? '1' : '2'} made a move`);
-      setPlayerTurn(!playerTurn);
-      // console.log(playerTurn)
-      // console.log(pieces)
+      board[closestPiece.id].player = pieces.length % 2 + 1
+      setBoard(board);
     });
   };
 
@@ -79,18 +61,25 @@ const App = () => {
 
   const handleBackPress = () => {
     // Remove the last piece
+    board[pieces[pieces.length-1].id].player = -1;
+    setBoard(board);
+
     const newPieces = pieces.slice(0, pieces.length - 1);
     setPieces(newPieces);
+    saveGameState(newPieces, "123");
 
-    // Reset the turn to the previous player
-    setPlayerTurn(!playerTurn);
   };
+
+  useEffect(() => {
+    // Assume retrieveGameState returns a Promise that resolves to the game state
+    retrieveGameState('123', (data) => {setPieces(data)});
+  }, []); // Empty dependency array means this effect runs once on mount
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.banner}>
         <Text style={styles.bannerText}>
-          {playerTurn ? "Player 1's Turn" : "Player 2's Turn"}
+          {pieces.length % 2 == 0 ? "Player 1's Turn" : "Player 2's Turn"}
         </Text>
         
       </View>
@@ -111,7 +100,8 @@ const App = () => {
             )
           )} */}
         </TouchableOpacity>
-
+        
+        {/* {console.log(pieces[pieces.length - 1].player)} */}
         {pieces.map(piece => (
           <Image
             key={piece.id}
