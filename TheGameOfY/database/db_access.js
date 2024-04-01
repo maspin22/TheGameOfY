@@ -17,14 +17,48 @@ export function saveGameState(gameState, gameId) {
 // Function to retrieve the game state
 export function retrieveGameState(gameId, success) {
     const gameStateRef = ref(db, `gameStates/${gameId}`);
-    get(gameStateRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        console.log("Retrieved game state: ", snapshot.val());
-        success(snapshot.val());
-      } else {
-        console.log("No game state available");
-      }
-    }).catch((error) => {
-      console.error("Error retrieving game state: ", error);
+
+    // Use onValue to listen for changes in real-time
+    onValue(gameStateRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log("Retrieved game state: ", snapshot.val());
+            success(snapshot.val()); // Invoke the callback with the new game state
+        } else {
+            console.log("No game state available");
+            success([]); // Optionally, invoke the callback with null or similar if no data
+        }
+    }, (error) => {
+        console.error("Error retrieving game state: ", error);
     });
-  }
+}
+
+
+// Function to get stored players 
+export function getPlayers(gameId , success) {
+    const playersRef = ref(db, `players/${gameId}`);
+    onValue(playersRef, (snapshot) => {
+        if (snapshot.exists()) {
+            // console.log("Retrieved players state: ", snapshot.val());
+            success(snapshot.val());
+        } else {
+            success([]);
+        }
+    }, (error) => {
+        console.error("Error retrieving players state: ", error);
+    });    
+}
+
+// Function to save the players state
+export function savePlayersState(gameId, players) {
+    const playersRef = ref(db, `players/${gameId}`);
+
+    if (players.length > 2) {
+        throw new Error('Cannot join game');
+    }
+    // Set the value
+    set(playersRef, players).then(() => {   
+        console.log("Players state saved successfully!");
+    }).catch((error) => {
+        console.error("Error saving players state: ", error);
+    });
+}
