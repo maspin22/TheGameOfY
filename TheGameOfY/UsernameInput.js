@@ -25,7 +25,6 @@ const UsernameInput = ({ handleSaveUsername, handleSaveGameId }) => {
       />
       {console.log(username)}
       {console.log(gameId)}
-
     </View>
   );
 };
