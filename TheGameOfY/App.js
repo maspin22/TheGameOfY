@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, TextInput, View, Text } from 'react-native';
+import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
 import IllegalMoveBanner from './IllegalMoveBanner';
 import UsernameInput from './UsernameInput';
-import { retrieveGameState, saveGameState, savePlayersState, getPlayers } from './database/db_access';
+import GameOverBanner from './GameOverBanner';
+import { retrieveGameState, saveGameState, savePlayersState, getPlayers, resign, retrieveWinner } from './database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,6 +12,7 @@ const App = () => {
   const [board, setBoard] = useState(boardConst);
   const [showBanner, setShowBanner] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [winner, setWinner] = useState(null);
   const [username, setUsername] = useState(null);
   const [gameId, setGameId] = useState(null);
 
@@ -30,13 +32,11 @@ const App = () => {
       const left = evt.nativeEvent.pageX - pageX - 10; // Adjusting to center the piece
       const top = evt.nativeEvent.pageY - pageY - 10;
       const closestPiece = findClosestPiece(left, top, board)
-      console.log(closestPiece)
 
       if (board[closestPiece.id].player != -1) {
         setShowBanner(true);
         return
       }
-      console.log(closestPiece)
       closestPiece.player = pieces.length % 2 + 1
       // Add the new piece to the array of pieces
       setPieces([...pieces, closestPiece]);
@@ -47,14 +47,9 @@ const App = () => {
     });
   };
 
-  const handleBackPress = () => {
-    // Remove the last piece
-    board[pieces[pieces.length-1].id].player = -1;
-    setBoard(board);
-
-    const newPieces = pieces.slice(0, pieces.length - 1);
-    setPieces(newPieces);
-    saveGameState(newPieces, gameId);
+  // this is brokem just make you win lol 
+  const handleResign = () => {
+    resign(gameId, player);
   };
 
   // This function attempts to join the game if the player isn't already part of it
@@ -85,6 +80,7 @@ const App = () => {
   // Fetches and subscribes to the game state
   const fetchGameState = useCallback(() => {
     retrieveGameState(gameId, setPieces);
+    retrieveWinner(gameId, setWinner);
   }, [gameId]);
 
   // Initial setup: check player count and fetch game state
@@ -102,24 +98,24 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {winner && <GameOverBanner winner={winner} player={username}></GameOverBanner>}
       {!gameStarted ? <><UsernameInput handleSaveUsername={setUsername} handleSaveGameId={setGameId}></UsernameInput></> : <></>}
 
-      {gameStarted ? (
+      {!winner && gameStarted ? (
         <>
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
-              {pieces.length % 2 === player ? "It's your turn" : "Player 2's Turn"}
+              {pieces.length % 2 === player ? `It's your turn ${username}` : "Player 2's Turn"}
             </Text>
           </View>
           <IllegalMoveBanner showBanner={showBanner}/>
 
-          <Button title="Back" onPress={handleBackPress} color="#841584" />
+          <Button title="Resign" onPress={handleResign} color="#841584" />
 
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
             <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
               <Image source={require('./assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
             </TouchableOpacity>
-                    
             {console.log("pieces", pieces)}
             {pieces.map(piece => (
               <Image
@@ -128,7 +124,6 @@ const App = () => {
                 style={[styles.pieceImage, piece.position]}
               />
             ))}
-
           </View>
         </>
       ) : <></>}

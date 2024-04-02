@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet } from 'react-native';
+import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
 
 const UsernameInput = ({ handleSaveUsername, handleSaveGameId }) => {
   const [username, setUsername] = useState('');
   const [gameId, setGameId] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  // Function to handle the submission
+  const handleSubmit = () => {
+    handleSaveUsername(username);
+    handleSaveGameId(gameId);
+    setSubmitted(true); // Mark as submitted to show the waiting message
+  };
 
   return (
     <View style={styles.container}>
@@ -12,19 +20,20 @@ const UsernameInput = ({ handleSaveUsername, handleSaveGameId }) => {
         onChangeText={setUsername}
         value={username}
         placeholder="Enter your username"
-        onSubmitEditing={() => handleSaveUsername(username)} // This will be triggered when Enter key is pressed
-        returnKeyType="done" // Optional: Changes the return key to indicate "done"
+        returnKeyType="done"
       />
       <TextInput
         style={styles.input}
         onChangeText={setGameId}
         value={gameId}
         placeholder="Enter a Game ID"
-        onSubmitEditing={() => handleSaveGameId(gameId)} // This will be triggered when Enter key is pressed
-        returnKeyType="done" // Optional: Changes the return key to indicate "done"
+        returnKeyType="done"
       />
-      {console.log(username)}
-      {console.log(gameId)}
+      <Button
+        title="Submit"
+        onPress={handleSubmit}
+      />
+      {submitted && <Text style={styles.waitingText}>Waiting for player two...</Text>}
     </View>
   );
 };
@@ -42,6 +51,10 @@ const styles = StyleSheet.create({
     margin: 12,
     borderWidth: 1,
     padding: 10,
+  },
+  waitingText: {
+    marginTop: 20,
+    fontSize: 16,
   },
 });
 
