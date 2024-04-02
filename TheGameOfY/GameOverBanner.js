@@ -7,7 +7,7 @@ const GameOverBanner = ({ winner, player }) => {
   if ( winner === null ){
     throw Error("winner required")
   }
-  const message = winner === player ? `Congratulations, ${winner}` : `Game Over! ${winner} won`;
+  const message = winner === player ? `Congratulations, you won!}` : `Game Over! The other player won`;
 
   return (
     <View style={styles.banner}>

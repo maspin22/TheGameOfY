@@ -110,7 +110,7 @@ const App = () => {
           </View>
           <IllegalMoveBanner showBanner={showBanner}/>
 
-          <Button title="Resign" onPress={handleResign} color="#841584" />
+          {/* <Button title="Resign" onPress={handleResign} color="#841584" /> */}
 
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
             <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
