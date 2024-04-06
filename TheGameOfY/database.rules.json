@@ -1,5 +1,33 @@
 {
   "rules": {
+    "$uid": {
+      ".write": "$uid === auth.uid",
+      "proposal": {
+        "$gameId": {
+
+        }
+      }
+    },
+    "games": {
+      "$gameId": {
+        ".write": "auth != null && (!data.exists() || auth.token.admin === true)",
+        ".read": "auth != null",
+        "moves": {
+          "$uid": {
+            ".write": "$uid === auth.uid"
+          }
+        },
+        "gameState": {
+          // Prevent clients from directly writing to gameState
+          ".write": "auth.token.admin === true"
+        }
+      }
+    }
+  }
+}
+
+{
+  "rules": {
     ".read": true,
     ".write": true
   }

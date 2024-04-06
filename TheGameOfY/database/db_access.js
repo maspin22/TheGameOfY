@@ -2,6 +2,7 @@ import { db } from "./firebase-config"
 import { ref, set, get, onValue, remove, onChildAdded, push, update } from "firebase/database";
 import { uuidv4 } from "@firebase/util";
 
+
 // Function to save the moves state
 export function saveGameState(gameState, gameId) {
     // Create a reference to the specific path
@@ -33,9 +34,46 @@ export function retrieveGameState(gameId, success) {
 }
 
 
+// Client can only write moves, propose resignation, and propose a game 
+// to propose a game it can be done in two ways 
+// 1. You make your own game with a unique id 
+// 2. the server match you with a game thats waiting for a second player 
+
+
+// Function to save the moves state
+export function writeMove(gameState, gameId, moveId) {
+    // Create a reference to the specific path
+    const gameStateRef = ref(db, `games/${gameId}/moves/${moveId}`);
+    // Set the value
+    set(gameStateRef, gameState).then(() => {
+        console.log("Game state saved successfully!");
+    }).catch((error) => {
+        console.error("Error saving game state: ", error);
+    });
+}
+
+// Function to retrieve the game state
+export function getMoves(gameId, success) {
+    const gameStateRef = ref(db, `games/${gameId}/moves`);
+
+    // Use onValue to listen for changes in real-time
+    onValue(gameStateRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log("Retrieved game state: ", snapshot.val());
+            success(snapshot.val()); // Invoke the callback with the new game state
+        } else {
+            console.log("No game state available");
+            success([]); // Optionally, invoke the callback with null or similar if no data
+        }
+    }, (error) => {
+        console.error("Error retrieving game state: ", error);
+    });
+}
+
+
 // Function to get stored players 
 export function getPlayers(gameId , success) {
-    const playersRef = ref(db, `${gameId}/players`);
+    const playersRef = ref(db, `games/${gameId}/gameState/players`);
     onValue(playersRef, (snapshot) => {
         if (snapshot.exists()) {
             // console.log("Retrieved players state: ", snapshot.val());
@@ -50,7 +88,7 @@ export function getPlayers(gameId , success) {
 
 // Function to save the players state
 export function savePlayersState(gameId, players) {
-    const playersRef = ref(db, `${gameId}/players`);
+    const playersRef = ref(db, `games/${gameId}/gameState/players`);
 
     if (players.length > 2) {
         throw new Error('Cannot join game');
@@ -67,7 +105,7 @@ export function savePlayersState(gameId, players) {
 // Function to save the moves state
 export function resign(gameId, playerId) {
     // Create a reference to the specific path
-    const winnerRef = ref(db, `${gameId}/winner`);
+    const winnerRef = ref(db, `games/${gameId}/winner`);
     // Set the value
     set(winnerRef, playerId).then(() => {
         console.log("Resigned successfully!");
@@ -78,7 +116,7 @@ export function resign(gameId, playerId) {
 
 // Function to retrieve the game state
 export function retrieveWinner(gameId, success) {
-    const winnerRef = ref(db, `${gameId}/winner`);
+    const winnerRef = ref(db, `games/${gameId}/winner`);
 
     // Use onValue to listen for changes in real-time
     onValue(winnerRef, (snapshot) => {
