@@ -1,34 +1,40 @@
 {
   "rules": {
-    "$uid": {
-      ".write": "$uid === auth.uid",
-      "proposal": {
-        "$gameId": {
-
-        }
+    "proposal": {
+      "$gameId": {
+        "$uid": {
+        ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true",
+        ".read": "$uid === auth.uid || auth.token.admin === true"
       }
     },
     "games": {
       "$gameId": {
-        ".write": "auth != null && (!data.exists() || auth.token.admin === true)",
-        ".read": "auth != null",
         "moves": {
+          "pie": {
+            ".validate": "newData.isArray() && newData.val().length <= 3",
+            ".write": "($auth != null && !data.exists()) || auth.token.admin === true",
+            ".read": "auth != null || auth.token.admin === true"
+          },
           "$uid": {
-            ".write": "$uid === auth.uid"
+            "$moveNumber":{
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 92",
+              ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true",
+              ".read": "auth != null || auth.token.admin === true"
+            }
           }
         },
         "gameState": {
-          // Prevent clients from directly writing to gameState
-          ".write": "auth.token.admin === true"
+          ".write": "auth.token.admin === true",
+          ".read": "auth != null || auth.token.admin === true"
         }
       }
     }
   }
 }
 
-{
-  "rules": {
-    ".read": true,
-    ".write": true
-  }
-}
+// {
+//   "rules": {
+//     ".read": true,
+//     ".write": true
+//   }
+// }

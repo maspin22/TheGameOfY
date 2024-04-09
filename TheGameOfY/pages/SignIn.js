@@ -10,6 +10,8 @@ export const signInWithGoogle = () => {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         const token = credential.accessToken; // Google Access Token
         const user = result.user;
+        const uid = user.uid;
+        console.log("uid", uid);
         
         // Proceed with your app logic here, e.g., navigate to another screen
         console.log("Signed in successfully!", user);

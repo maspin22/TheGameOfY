@@ -1,8 +1,8 @@
 import { db } from "./firebase-config"
 import { ref, set, get, onValue, remove, onChildAdded, push, update } from "firebase/database";
 import { uuidv4 } from "@firebase/util";
-
-
+import { authentication } from './firebase-config';
+// TODO: delete
 // Function to save the moves state
 export function saveGameState(gameState, gameId) {
     // Create a reference to the specific path
@@ -15,6 +15,7 @@ export function saveGameState(gameState, gameId) {
     });
 }
 
+// TODO: delete
 // Function to retrieve the game state
 export function retrieveGameState(gameId, success) {
     const gameStateRef = ref(db, `${gameId}/gameStates`);
@@ -34,58 +35,7 @@ export function retrieveGameState(gameId, success) {
 }
 
 
-// Client can only write moves, propose resignation, and propose a game 
-// to propose a game it can be done in two ways 
-// 1. You make your own game with a unique id 
-// 2. the server match you with a game thats waiting for a second player 
-
-
-// Function to save the moves state
-export function writeMove(gameState, gameId, moveId) {
-    // Create a reference to the specific path
-    const gameStateRef = ref(db, `games/${gameId}/moves/${moveId}`);
-    // Set the value
-    set(gameStateRef, gameState).then(() => {
-        console.log("Game state saved successfully!");
-    }).catch((error) => {
-        console.error("Error saving game state: ", error);
-    });
-}
-
-// Function to retrieve the game state
-export function getMoves(gameId, success) {
-    const gameStateRef = ref(db, `games/${gameId}/moves`);
-
-    // Use onValue to listen for changes in real-time
-    onValue(gameStateRef, (snapshot) => {
-        if (snapshot.exists()) {
-            console.log("Retrieved game state: ", snapshot.val());
-            success(snapshot.val()); // Invoke the callback with the new game state
-        } else {
-            console.log("No game state available");
-            success([]); // Optionally, invoke the callback with null or similar if no data
-        }
-    }, (error) => {
-        console.error("Error retrieving game state: ", error);
-    });
-}
-
-
-// Function to get stored players 
-export function getPlayers(gameId , success) {
-    const playersRef = ref(db, `games/${gameId}/gameState/players`);
-    onValue(playersRef, (snapshot) => {
-        if (snapshot.exists()) {
-            // console.log("Retrieved players state: ", snapshot.val());
-            success(snapshot.val());
-        } else {
-            success([]);
-        }
-    }, (error) => {
-        console.error("Error retrieving players state: ", error);
-    });    
-}
-
+// TODO: delete 
 // Function to save the players state
 export function savePlayersState(gameId, players) {
     const playersRef = ref(db, `games/${gameId}/gameState/players`);
@@ -102,21 +52,139 @@ export function savePlayersState(gameId, players) {
 }
 
 
-// Function to save the moves state
-export function resign(gameId, playerId) {
+// Client can only write moves, propose resignation, and propose a game 
+// to propose a game it can be done in two ways 
+// 1. You make your own game with a unique id 
+// 2. the server match you with a game thats waiting for a second player 
+
+// Function to propose a match
+export function proposeGame(gameId) {
+    const uid = authentication.currentUser.uid;
     // Create a reference to the specific path
-    const winnerRef = ref(db, `games/${gameId}/winner`);
+    const proposalRef = ref(db, `proposal/${gameId}/${uid}`);
     // Set the value
-    set(winnerRef, playerId).then(() => {
-        console.log("Resigned successfully!");
+    set(proposalRef, true).then(() => {
+        console.log(`${uid} asking for a game ${gameId}`);
+    }).catch((error) => {
+        console.error("Error asking for a game: ", error);
+    });
+}
+
+// Function to resign a game
+export function resignGame(gameId) {
+    const uid = authentication.currentUser.uid;
+    // Create a reference to the specific path
+    const resignationRef = ref(db, `proposal/${gameId}/${uid}/resign`);
+    // Set the value
+    set(resignationRef, true).then(() => {
+        console.log(`${uid} resigning game ${gameId}`);
+    }).catch((error) => {
+        console.error("Error resigning game: ", error);
+    });
+}
+
+// Function to acceptPie move
+export function acceptPie(gameId) {
+    const uid = authentication.currentUser.uid;
+    console.log(uid);
+    // Create a reference to the specific path
+    const resignationRef = ref(db, `proposal/${gameId}/${uid}/acceptedPie`);
+    // Set the value
+    set(resignationRef, true).then(() => {
+        console.log(`${uid} resigning game ${gameId}`);
+    }).catch((error) => {
+        console.error("Error resigning game: ", error);
+    });
+}
+
+// Function to save the moves state
+export function writeMove(gameId, moveNumber, pieceId) {
+    const uid = authentication.currentUser.uid;
+    console.log(uid);
+    // Create a reference to the specific path
+    const gameStateRef = ref(db, `games/${gameId}/moves/${uid}/${moveNumber}`);
+    // Set the value
+    set(gameStateRef, pieceId).then(() => {
+        console.log("Game state saved successfully!");
     }).catch((error) => {
         console.error("Error saving game state: ", error);
     });
 }
 
+// Function to retrieve the OtherPlayersMoves
+export function getOtherPlayersMoves(gameId, otherPlayerId, success) {
+    const gameStateRef = ref(db, `games/${gameId}/moves/${otherPlayerId}`);
+
+    // Use onValue to listen for changes in real-time
+    onValue(gameStateRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log("Retrieved game state: ", snapshot.val());
+            // format val unto nice array 
+            success(snapshot.val()); // Invoke the callback with the new game state
+        } else {
+            console.log("No game state available");
+            success([]); // Optionally, invoke the callback with null or similar if no data
+        }
+    }, (error) => {
+        console.error("Error retrieving game state: ", error);
+    });
+}
+
+// Function to retrieve the OtherPlayersMoves
+export function getPie(gameId, otherPlayerId, success) {
+    const gameStateRef = ref(db, `games/${gameId}/moves/${otherPlayerId}`);
+
+    // Use onValue to listen for changes in real-time
+    onValue(gameStateRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log("Retrieved game state: ", snapshot.val());
+            // format val unto nice array 
+            success(snapshot.val()); // Invoke the callback with the new game state
+        } else {
+            console.log("No game state available");
+            success([]); // Optionally, invoke the callback with null or similar if no data
+        }
+    }, (error) => {
+        console.error("Error retrieving game state: ", error);
+    });
+}
+
+// Function to get stored players 
+export function getPlayers(gameId , success) {
+    const playersRef = ref(db, `games/${gameId}/gameState/players`);
+    onValue(playersRef, (snapshot) => {
+        if (snapshot.exists()) {
+            // console.log("Retrieved players state: ", snapshot.val());
+            success(snapshot.val());
+        } else {
+            success([]);
+        }
+    }, (error) => {
+        console.error("Error retrieving players state: ", error);
+    });    
+}
+
+
+// Function to get turn
+export function getTurn(gameId, success) {
+    const uid = authentication.currentUser.uid;
+
+    const turnRef = ref(db, `games/${gameId}/gameState/turn`);
+    onValue(turnRef, (snapshot) => {
+        if (snapshot.exists()) {
+            // console.log("Retrieved players state: ", snapshot.val());
+            success(snapshot.val() === uid);
+        } else {
+            success([]);
+        }
+    }, (error) => {
+        console.error("Error retrieving turn state: ", error);
+    });    
+}
+
 // Function to retrieve the game state
 export function retrieveWinner(gameId, success) {
-    const winnerRef = ref(db, `games/${gameId}/winner`);
+    const winnerRef = ref(db, `games/${gameId}/gameState/winner`);
 
     // Use onValue to listen for changes in real-time
     onValue(winnerRef, (snapshot) => {
@@ -129,4 +197,21 @@ export function retrieveWinner(gameId, success) {
     }, (error) => {
         console.error("Error retrieving game state: ", error);
     });
+}
+
+// Function to get hasGameStarted
+export function hasGameStarted(gameId, success) {
+    const uid = authentication.currentUser.uid;
+
+    const hasGameStartedRef = ref(db, `games/${gameId}/gameState/hasGameStarted`);
+    onValue(hasGameStartedRef, (snapshot) => {
+        if (snapshot.exists()) {
+            // console.log("Retrieved players state: ", snapshot.val());
+            success(snapshot.val());
+        } else {
+            success([]);
+        }
+    }, (error) => {
+        console.error("Error retrieving turn state: ", error);
+    });    
 }

@@ -3,12 +3,14 @@ import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text }
 import IllegalMoveBanner from './IllegalMoveBanner';
 import UsernameInput from './UsernameInput';
 import GameOverBanner from './GameOverBanner';
-import { retrieveGameState, saveGameState, savePlayersState, getPlayers, resign, retrieveWinner } from '../database/db_access';
+import { getOtherPlayersMoves, writeMove, resignGame, retrieveWinner, getTurn, proposeGame, hasGameStarted } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
-import { v4 as uuidv4 } from 'uuid';
 
 const YGame = () => {
   const [pieces, setPieces] = useState([]); // Array to hold piece objects
+  const [pieces2, setOtherPlayersPieces] = useState([]); // Array to hold piece objects
+  const [turn, setTurn] = useState(false);
+  const [otherPlayer, setOtherPlayer] = useState('');
   const [board, setBoard] = useState(boardConst);
   const [showBanner, setShowBanner] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -22,7 +24,7 @@ const YGame = () => {
 
   const handlePress = (evt) => {
     console.log(player)
-    if (player !== pieces.length % 2) {
+    if (!turn) {
       alert("It's not your turn!");
       return;
     }
@@ -39,8 +41,8 @@ const YGame = () => {
       }
       closestPiece.player = pieces.length % 2 + 1
       // Add the new piece to the array of pieces
-      setPieces([...pieces, closestPiece]);
-      saveGameState([...pieces, closestPiece], gameId);
+      setPieces([...pieces, closestPiece.id]);
+      writeMove(gameId, pieces.length, closestPiece.id );
 
       board[closestPiece.id].player = closestPiece.player
       setBoard(board);
@@ -49,44 +51,21 @@ const YGame = () => {
 
   // this is brokem just make you win lol 
   const handleResign = () => {
-    resign(gameId, player);
+    resignGame(gameId);
   };
-
-  // This function attempts to join the game if the player isn't already part of it
-  const checkPlayerCount = useCallback(() => {
-    getPlayers(gameId, (players) => {
-      // Assuming players is always an array (empty if no players)
-      const isPlayerInGame = players.includes(username);
-      
-      if (!isPlayerInGame && players.length < 2) {
-        // Attempt to join game
-        try {
-          const updatedPlayers = [...players, username];
-          savePlayersState(gameId, updatedPlayers);
-          setPlayer(updatedPlayers.indexOf(username));
-          if (updatedPlayers.length === 2) {
-            setGameStarted(true);
-          }
-        } catch (error) {
-          console.error("Error joining game:", error);
-        }
-      } else if (isPlayerInGame && players.length === 2) {
-        // If the current player is in the game and there are 2 players, start the game
-        setGameStarted(true);
-      }
-    });
-  }, [gameId, username]); // Dependencies
 
   // Fetches and subscribes to the game state
   const fetchGameState = useCallback(() => {
-    retrieveGameState(gameId, setPieces);
+    hasGameStarted(gameId, setGameStarted)
+    getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces);
     retrieveWinner(gameId, setWinner);
+    getTurn(gameId, setTurn);
   }, [gameId]);
 
   // Initial setup: check player count and fetch game state
   useEffect(() => {
     if (username) {
-      checkPlayerCount();
+      proposeGame(gameId);
       fetchGameState();
     }
 
@@ -105,12 +84,10 @@ const YGame = () => {
         <>
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
-              {pieces.length % 2 === player ? `It's your turn ${username}` : "Player 2's Turn"}
+              {turn ? `Its your turn ${username}` : "Player 2's Turn"}
             </Text>
           </View>
           <IllegalMoveBanner showBanner={showBanner}/>
-
-          {/* <Button title="Resign" onPress={handleResign} color="#841584" /> */}
 
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
             <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
@@ -119,8 +96,16 @@ const YGame = () => {
             {console.log("pieces", pieces)}
             {pieces.map(piece => (
               <Image
-                key={piece.id}
-                source={piece.player === 1 ? require('../assets/blackStone.png') : require('../assets/whiteStone.png')}
+                key={piece}
+                source={require('../assets/whiteStone.png')}
+                style={[styles.pieceImage, piece.position]}
+              />
+            ))}
+
+            {pieces2.map(piece => (
+              <Image
+                key={piece}
+                source={require('../assets/blackStone.png')}
                 style={[styles.pieceImage, piece.position]}
               />
             ))}
