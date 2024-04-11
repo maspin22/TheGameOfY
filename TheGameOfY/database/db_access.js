@@ -2,55 +2,6 @@ import { db } from "./firebase-config"
 import { ref, set, get, onValue, remove, onChildAdded, push, update } from "firebase/database";
 import { uuidv4 } from "@firebase/util";
 import { authentication } from './firebase-config';
-// TODO: delete
-// Function to save the moves state
-export function saveGameState(gameState, gameId) {
-    // Create a reference to the specific path
-    const gameStateRef = ref(db, `${gameId}/gameStates`);
-    // Set the value
-    set(gameStateRef, gameState).then(() => {
-        console.log("Game state saved successfully!");
-    }).catch((error) => {
-        console.error("Error saving game state: ", error);
-    });
-}
-
-// TODO: delete
-// Function to retrieve the game state
-export function retrieveGameState(gameId, success) {
-    const gameStateRef = ref(db, `${gameId}/gameStates`);
-
-    // Use onValue to listen for changes in real-time
-    onValue(gameStateRef, (snapshot) => {
-        if (snapshot.exists()) {
-            console.log("Retrieved game state: ", snapshot.val());
-            success(snapshot.val()); // Invoke the callback with the new game state
-        } else {
-            console.log("No game state available");
-            success([]); // Optionally, invoke the callback with null or similar if no data
-        }
-    }, (error) => {
-        console.error("Error retrieving game state: ", error);
-    });
-}
-
-
-// TODO: delete 
-// Function to save the players state
-export function savePlayersState(gameId, players) {
-    const playersRef = ref(db, `games/${gameId}/gameState/players`);
-
-    if (players.length > 2) {
-        throw new Error('Cannot join game');
-    }
-    // Set the value
-    set(playersRef, players).then(() => {   
-        console.log("Players state saved successfully!");
-    }).catch((error) => {
-        console.error("Error saving players state: ", error);
-    });
-}
-
 
 // Client can only write moves, propose resignation, and propose a game 
 // to propose a game it can be done in two ways 
@@ -61,10 +12,23 @@ export function savePlayersState(gameId, players) {
 export function proposeGame(gameId) {
     const uid = authentication.currentUser.uid;
     // Create a reference to the specific path
-    const proposalRef = ref(db, `proposal/${gameId}/${uid}`);
+    const proposalRef = ref(db, `proposal/${gameId}/${uid}/game`);
     // Set the value
     set(proposalRef, true).then(() => {
         console.log(`${uid} asking for a game ${gameId}`);
+    }).catch((error) => {
+        console.error("Error asking for a game: ", error);
+    });
+}
+
+// Get matched
+export function getMatched() {
+    const uid = authentication.currentUser.uid;
+    // Create a reference to the specific path
+    const proposalRef = ref(db, `waitingPool/${uid}`);
+    // Set the value
+    set(proposalRef, true).then(() => {
+        console.log(`${uid} asking for a game`);
     }).catch((error) => {
         console.error("Error asking for a game: ", error);
     });
@@ -116,7 +80,7 @@ export function getOtherPlayersMoves(gameId, otherPlayerId, success) {
     const gameStateRef = ref(db, `games/${gameId}/moves/${otherPlayerId}`);
 
     // Use onValue to listen for changes in real-time
-    onValue(gameStateRef, (snapshot) => {
+    const unsubscribe = onValue(gameStateRef, (snapshot) => {
         if (snapshot.exists()) {
             console.log("Retrieved game state: ", snapshot.val());
             // format val unto nice array 
@@ -127,6 +91,8 @@ export function getOtherPlayersMoves(gameId, otherPlayerId, success) {
     }, (error) => {
         console.error("Error retrieving game state: ", error);
     });
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }
 
 // Function to retrieve the OtherPlayersMoves
@@ -135,7 +101,7 @@ export function getMoves(gameId, success) {
     const gameStateRef = ref(db, `games/${gameId}/moves/${uid}`);
 
     // Use onValue to listen for changes in real-time
-    onValue(gameStateRef, (snapshot) => {
+    const unsubscribe = onValue(gameStateRef, (snapshot) => {
         if (snapshot.exists()) {
             console.log("Retrieved game state: ", snapshot.val());
             // format val unto nice array 
@@ -146,6 +112,8 @@ export function getMoves(gameId, success) {
     }, (error) => {
         console.error("Error retrieving game state: ", error);
     });
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }
 
 // Function to retrieve the OtherPlayersMoves
@@ -172,7 +140,7 @@ export function getPlayers(gameId, setOtherPlayerId) {
     const playersRef = ref(db, `games/${gameId}/gameState/players`);
     const uid = authentication.currentUser.uid;
 
-    onValue(playersRef, (snapshot) => {
+    const unsubscribe = onValue(playersRef, (snapshot) => {
         if (snapshot.exists()) {
             const players = snapshot.val();
             console.log("Retrieved players state: ", players);
@@ -182,7 +150,9 @@ export function getPlayers(gameId, setOtherPlayerId) {
         } 
     }, (error) => {
         console.error("Error retrieving players state: ", error);
-    });    
+    });   
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }
 
 
@@ -191,7 +161,7 @@ export function getTurn(gameId, success) {
     const uid = authentication.currentUser.uid;
 
     const turnRef = ref(db, `games/${gameId}/gameState/turn`);
-    onValue(turnRef, (snapshot) => {
+    const unsubscribe = onValue(turnRef, (snapshot) => {
         if (snapshot.exists()) {
             // console.log("Retrieved players state: ", snapshot.val());
             success(snapshot.val() === uid);
@@ -201,6 +171,8 @@ export function getTurn(gameId, success) {
     }, (error) => {
         console.error("Error retrieving turn state: ", error);
     });    
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }
 
 // Function to retrieve the game state
@@ -208,7 +180,7 @@ export function retrieveWinner(gameId, success) {
     const winnerRef = ref(db, `games/${gameId}/gameState/winner`);
 
     // Use onValue to listen for changes in real-time
-    onValue(winnerRef, (snapshot) => {
+    const unsubscribe = onValue(winnerRef, (snapshot) => {
         if (snapshot.exists()) {
             console.log("Retrieved winner: ", snapshot.val());
             success(snapshot.val()); // Invoke the callback with the new game state
@@ -218,6 +190,8 @@ export function retrieveWinner(gameId, success) {
     }, (error) => {
         console.error("Error retrieving game state: ", error);
     });
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }
 
 // Function to get hasGameStarted
@@ -225,7 +199,7 @@ export function hasGameStarted(gameId, success) {
     const uid = authentication.currentUser.uid;
 
     const hasGameStartedRef = ref(db, `games/${gameId}/gameState/hasGameStarted`);
-    onValue(hasGameStartedRef, (snapshot) => {
+    const unsubscribe = onValue(hasGameStartedRef, (snapshot) => {
         if (snapshot.exists()) {
             console.log("Retrieved hasGameStarted: ", snapshot.val());
             success(snapshot.val());
@@ -233,4 +207,7 @@ export function hasGameStarted(gameId, success) {
     }, (error) => {
         console.error("Error retrieving turn state: ", error);
     });    
+
+    // Return the unsubscribe function so it can be called to remove the listener
+    return unsubscribe;
 }

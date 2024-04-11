@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
-import IllegalMoveBanner from './IllegalMoveBanner';
 import UsernameInput from './UsernameInput';
 import GameOverBanner from './GameOverBanner';
 import { getOtherPlayersMoves, writeMove, resignGame, retrieveWinner, getTurn, proposeGame, hasGameStarted, getPlayers, getMoves } from '../database/db_access';
@@ -54,28 +53,25 @@ const YGame = () => {
     resignGame(gameId);
   };
 
-  // Fetches and subscribes to the game state
-  const fetchGameState = useCallback(() => {
-    hasGameStarted(gameId, setGameStarted)
-    getPlayers(gameId, setOtherPlayer)
-    getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces);
-    getMoves(gameId, setPieces);
-    retrieveWinner(gameId, setWinner);
-    getTurn(gameId, setTurn);
-  }, [gameId, otherPlayer]);
-
   // Initial setup: check player count and fetch game state
   useEffect(() => {
+    // Array to hold cleanup functions
+    const cleanupFunctions = [];
     if (username) {
       proposeGame(gameId);
-      fetchGameState();
+      
+      // Add the unsubscribe function from each gameState fetch to the array
+      cleanupFunctions.push(hasGameStarted(gameId, setGameStarted));
+      cleanupFunctions.push(getPlayers(gameId, setOtherPlayer));
+      cleanupFunctions.push(getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
+      cleanupFunctions.push(getMoves(gameId, setPieces));
+      cleanupFunctions.push(retrieveWinner(gameId, setWinner));
+      cleanupFunctions.push(getTurn(gameId, setTurn));
     }
 
-    // Assuming retrieveGameState returns a function for cleanup
-    return () => {
-      // Cleanup logic here, e.g., unsubscribe from gameState updates
-    };
-  }, [username, fetchGameState]);
+    return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
+
+  }, [username, gameId, otherPlayer]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,8 +85,11 @@ const YGame = () => {
               {turn ? `Its your turn ${username}` : "Player 2's Turn"}
             </Text>
           </View>
-          <IllegalMoveBanner showBanner={showBanner}/>
 
+          <View style={{ marginVertical: 10 }}>
+            <Button title="Resign Game" onPress={handleResign} color="#FF6347" />
+          </View>   
+                 
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
             <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
               <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />

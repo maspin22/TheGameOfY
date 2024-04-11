@@ -90,7 +90,7 @@ exports.checkWinCondition = functions.database.ref('games/{gameId}/moves/{uid}/{
     }
   })
 
-exports.startGameFromCustomGameId = functions.database.ref('proposal/{gameId}/{uid}')
+exports.startGameFromCustomGameId = functions.database.ref('proposal/{gameId}/{uid}/game')
   .onWrite(async (change, context) => {
     // Exit if data was deleted
     if (!change.after.exists()) return null
@@ -148,7 +148,7 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
     // You can access path wildcards via context.params
     const gameId = context.params.gameId
     const uid = context.params.uid
-
+    // TODO: Validate the move
     const db = admin.database()
     const gameRef = db.ref(`games/${gameId}/gameState`)
 
@@ -164,4 +164,28 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
     console.log(otherPlayerId)
     // Set the game state's turn property to the other player's ID
     await db.ref(`games/${gameId}/gameState/turn`).set(otherPlayerId)
+  })
+
+exports.handleResignation = functions.database.ref('proposal/{gameId}/{uid}/resign')
+  .onWrite(async (change, context) => {
+    // You can access path wildcards via context.params
+    const gameId = context.params.gameId
+    const uid = context.params.uid
+    if (change.after.val() === true) {
+      const db = admin.database()
+      const gameRef = db.ref(`games/${gameId}/gameState`)
+
+      const gameSnapshot = await gameRef.once('value')
+      const game = gameSnapshot.val()
+      console.log(game)
+      const players = game.players
+      const playerIndex = players.indexOf(uid)
+
+      // Assuming there are only two players, find the index of the other player
+      const otherPlayerIndex = playerIndex === 0 ? 1 : 0
+      const otherPlayerId = players[otherPlayerIndex] // Get the ID of the other player
+      console.log(otherPlayerId)
+      // Set the game state's turn property to the other player's ID
+      await db.ref(`games/${gameId}/gameState/winner`).set(otherPlayerId)
+    }
   })

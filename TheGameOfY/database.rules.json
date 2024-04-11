@@ -1,32 +1,42 @@
 {
   "rules": {
+    "waitingPool": {
+      ".write": "auth.token.admin === true",
+      ".read": "auth != null || auth.token.admin === true",
+      "$uid": {
+        "game": {
+          ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true"
+        },
+        "resign": {
+          ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true"
+        }
+      }
+    },
     "proposal": {
       "$gameId": {
         "$uid": {
-        ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true",
-        ".read": "$uid === auth.uid || auth.token.admin === true"
+          ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true",
+          ".read": "$uid === auth.uid || auth.token.admin === true"
         }
-      },
+      }
     },
     "games": {
       "$gameId": {
+        ".read": "auth != null || auth.token.admin === true",
         "moves": {
           "pie": {
-            ".write": "(auth != null && !data.exists()) || auth.token.admin === true",
-            ".read": "auth != null || auth.token.admin === true"
+            ".write": "(auth != null && !data.exists()) || auth.token.admin === true"
           },
           "$uid": {
             ".read": "auth != null || auth.token.admin === true",
             "$moveNumber":{
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 92",
-              ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true",
-              ".read": "auth != null || auth.token.admin === true"
+              ".write": "($uid === auth.uid && !data.exists()) || auth.token.admin === true"
             }
           }
         },
         "gameState": {
-          ".write": "auth.token.admin === true",
-          ".read": "auth != null || auth.token.admin === true"
+          ".write": "auth.token.admin === true"
         }
       }
     }

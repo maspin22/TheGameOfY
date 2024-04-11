@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { authentication } from '../database/firebase-config';
 
 // Initialize Firebase Auth and provider
@@ -12,7 +12,7 @@ export const signInWithGoogle = () => {
         const user = result.user;
         const uid = user.uid;
         console.log("uid", uid);
-        
+
         // Proceed with your app logic here, e.g., navigate to another screen
         console.log("Signed in successfully!", user);
       }).catch((error) => {
@@ -20,3 +20,6 @@ export const signInWithGoogle = () => {
       });
   };
   
+// export const signInWithGoogleRedirect = () => {
+//     return signInWithRedirect(authentication, provider);
+// };
