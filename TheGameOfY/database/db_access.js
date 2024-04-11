@@ -123,7 +123,25 @@ export function getOtherPlayersMoves(gameId, otherPlayerId, success) {
             success(snapshot.val()); // Invoke the callback with the new game state
         } else {
             console.log("No game state available");
-            success([]); // Optionally, invoke the callback with null or similar if no data
+        }
+    }, (error) => {
+        console.error("Error retrieving game state: ", error);
+    });
+}
+
+// Function to retrieve the OtherPlayersMoves
+export function getMoves(gameId, success) {
+    const uid = authentication.currentUser.uid;
+    const gameStateRef = ref(db, `games/${gameId}/moves/${uid}`);
+
+    // Use onValue to listen for changes in real-time
+    onValue(gameStateRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log("Retrieved game state: ", snapshot.val());
+            // format val unto nice array 
+            success(snapshot.val()); // Invoke the callback with the new game state
+        } else {
+            console.log("No game state available");
         }
     }, (error) => {
         console.error("Error retrieving game state: ", error);
@@ -150,15 +168,18 @@ export function getPie(gameId, otherPlayerId, success) {
 }
 
 // Function to get stored players 
-export function getPlayers(gameId , success) {
+export function getPlayers(gameId, setOtherPlayerId) {
     const playersRef = ref(db, `games/${gameId}/gameState/players`);
+    const uid = authentication.currentUser.uid;
+
     onValue(playersRef, (snapshot) => {
         if (snapshot.exists()) {
-            // console.log("Retrieved players state: ", snapshot.val());
-            success(snapshot.val());
-        } else {
-            success([]);
-        }
+            const players = snapshot.val();
+            console.log("Retrieved players state: ", players);
+            const otherPlayerIndex = players.indexOf(uid) === 0 ? 1 : 0;
+            console.log("otherPlayerIndex", players[otherPlayerIndex]);
+            setOtherPlayerId(players[otherPlayerIndex]);
+        } 
     }, (error) => {
         console.error("Error retrieving players state: ", error);
     });    
@@ -206,11 +227,9 @@ export function hasGameStarted(gameId, success) {
     const hasGameStartedRef = ref(db, `games/${gameId}/gameState/hasGameStarted`);
     onValue(hasGameStartedRef, (snapshot) => {
         if (snapshot.exists()) {
-            // console.log("Retrieved players state: ", snapshot.val());
+            console.log("Retrieved hasGameStarted: ", snapshot.val());
             success(snapshot.val());
-        } else {
-            success([]);
-        }
+        } 
     }, (error) => {
         console.error("Error retrieving turn state: ", error);
     });    

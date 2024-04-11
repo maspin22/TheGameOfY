@@ -3,7 +3,7 @@ import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text }
 import IllegalMoveBanner from './IllegalMoveBanner';
 import UsernameInput from './UsernameInput';
 import GameOverBanner from './GameOverBanner';
-import { getOtherPlayersMoves, writeMove, resignGame, retrieveWinner, getTurn, proposeGame, hasGameStarted } from '../database/db_access';
+import { getOtherPlayersMoves, writeMove, resignGame, retrieveWinner, getTurn, proposeGame, hasGameStarted, getPlayers, getMoves } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
 
 const YGame = () => {
@@ -18,16 +18,14 @@ const YGame = () => {
   const [username, setUsername] = useState(null);
   const [gameId, setGameId] = useState(null);
 
-  const [player, setPlayer] = useState(-1);
-
   const boardRef = useRef(null); // Reference to the board's TouchableOpacity
 
   const handlePress = (evt) => {
-    console.log(player)
     if (!turn) {
       alert("It's not your turn!");
       return;
     }
+    console.log(evt)
 
     boardRef.current.measure((x, y, width, height, pageX, pageY) => {
       // Calculate the relative position
@@ -35,13 +33,15 @@ const YGame = () => {
       const top = evt.nativeEvent.pageY - pageY - 10;
       const closestPiece = findClosestPiece(left, top, board)
 
-      if (board[closestPiece.id].player != -1) {
+      console.log(pieces.indexOf(closestPiece.id));
+      console.log(pieces2.indexOf(closestPiece.id));
+      if (pieces.indexOf(closestPiece.id) != -1 | pieces2.indexOf(closestPiece.id) != -1) {
+        alert("Illegal move");
         setShowBanner(true);
         return
       }
       closestPiece.player = pieces.length % 2 + 1
       // Add the new piece to the array of pieces
-      setPieces([...pieces, closestPiece.id]);
       writeMove(gameId, pieces.length, closestPiece.id );
 
       board[closestPiece.id].player = closestPiece.player
@@ -57,10 +57,12 @@ const YGame = () => {
   // Fetches and subscribes to the game state
   const fetchGameState = useCallback(() => {
     hasGameStarted(gameId, setGameStarted)
+    getPlayers(gameId, setOtherPlayer)
     getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces);
+    getMoves(gameId, setPieces);
     retrieveWinner(gameId, setWinner);
     getTurn(gameId, setTurn);
-  }, [gameId]);
+  }, [gameId, otherPlayer]);
 
   // Initial setup: check player count and fetch game state
   useEffect(() => {
@@ -73,13 +75,13 @@ const YGame = () => {
     return () => {
       // Cleanup logic here, e.g., unsubscribe from gameState updates
     };
-  }, [username, checkPlayerCount, fetchGameState]);
+  }, [username, fetchGameState]);
 
   return (
     <SafeAreaView style={styles.container}>
       {winner && <GameOverBanner winner={winner} player={username}></GameOverBanner>}
       {!gameStarted ? <><UsernameInput handleSaveUsername={setUsername} handleSaveGameId={setGameId}></UsernameInput></> : <></>}
-
+      {console.log("gameStarted:", gameStarted)}
       {!winner && gameStarted ? (
         <>
           <View style={styles.banner}>
@@ -94,11 +96,12 @@ const YGame = () => {
               <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
             </TouchableOpacity>
             {console.log("pieces", pieces)}
+
             {pieces.map(piece => (
               <Image
                 key={piece}
                 source={require('../assets/whiteStone.png')}
-                style={[styles.pieceImage, piece.position]}
+                style={[styles.pieceImage, boardConst[piece].position]}
               />
             ))}
 
@@ -106,7 +109,7 @@ const YGame = () => {
               <Image
                 key={piece}
                 source={require('../assets/blackStone.png')}
-                style={[styles.pieceImage, piece.position]}
+                style={[styles.pieceImage, boardConst[piece].position]}
               />
             ))}
           </View>

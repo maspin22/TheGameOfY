@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { authentication } from '../database/firebase-config';
+
 
 const { width } = Dimensions.get('window'); // Get the screen width
 
@@ -7,7 +9,8 @@ const GameOverBanner = ({ winner, player }) => {
   if ( winner === null ){
     throw Error("winner required")
   }
-  const message = winner === player ? `Congratulations, you won!}` : `Game Over! The other player won`;
+  const uid = authentication.currentUser.uid;
+  const message = winner === uid ? `Congratulations, you won!` : `Game Over! The other player won`;
 
   return (
     <View style={styles.banner}>
