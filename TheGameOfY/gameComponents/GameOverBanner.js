@@ -9,14 +9,16 @@ const GameOverBanner = ({ winner, player }) => {
   if ( winner === null ){
     throw Error("winner required")
   }
-  const uid = authentication.currentUser.uid;
-  const message = winner === uid ? `Congratulations, you won!` : `Game Over! The other player won`;
 
-  return (
-    <View style={styles.banner}>
-      <Text style={styles.text}>{message}</Text>
-    </View>
-  );
+  if (authentication.currentUser) {
+    const uid = authentication.currentUser.uid;
+    const message = winner === uid ? `Congratulations, you won!` : `Game Over! The other player won`;
+    return (
+      <View style={styles.banner}>
+        <Text style={styles.text}>{message}</Text>
+      </View>
+    );
+  } 
 };
 
 const styles = StyleSheet.create({

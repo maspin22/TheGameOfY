@@ -5,20 +5,23 @@ import FrontPage from './pages/FrontPage';
 import GameLobby from './pages/GameLobby';
 import YGame from './gameComponents/YGame';
 import YGameLocal from './gameComponents/YGameLocal';
+import ErrorBoundary from './pages/ErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
 function App() {
   return (
     // <NavigationContainer linking={linkingConfig}>
-    <NavigationContainer >
-      <Stack.Navigator>
-        <Stack.Screen name="FrontPage" component={FrontPage} options={{ title: 'Welcome' }}/>
-        <Stack.Screen name="GameLobby" component={GameLobby} options={{ title: 'Lobby' }}/>
-        <Stack.Screen name="YGame" component={YGame} options={{ title: 'YGame' }}/>
-        <Stack.Screen name="YGameLocal" component={YGameLocal} options={{ title: 'YGame Local' }}/>
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer >
+        <Stack.Navigator>
+          <Stack.Screen name="FrontPage" component={FrontPage} options={{ title: 'Welcome' }}/>
+          <Stack.Screen name="GameLobby" component={GameLobby} options={{ title: 'Lobby' }}/>
+          <Stack.Screen name="YGame" component={YGame} options={{ title: 'YGame' }}/>
+          <Stack.Screen name="YGameLocal" component={YGameLocal} options={{ title: 'YGame Local' }}/>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }
 

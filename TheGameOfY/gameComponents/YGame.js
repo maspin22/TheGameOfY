@@ -1,30 +1,50 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
-import UsernameInput from './UsernameInput';
 import GameOverBanner from './GameOverBanner';
-import { getOtherPlayersMoves, writeMove, resignGame, retrieveWinner, getTurn, proposeGame, hasGameStarted, getPlayers, getMoves } from '../database/db_access';
+import { getOtherPlayersMoves, writeMove, resignGame, getMoves, getGameState, getPie } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
 
-const YGame = () => {
+const YGame = ({ route }) => {
+  const { username, gameId } = route.params;
+  console.log('Imported username:', username); // Uses imported username
+  console.log('Route gameId:', gameId); // Uses username from route.params
+
   const [pieces, setPieces] = useState([]); // Array to hold piece objects
   const [pieces2, setOtherPlayersPieces] = useState([]); // Array to hold piece objects
   const [turn, setTurn] = useState(false);
   const [otherPlayer, setOtherPlayer] = useState('');
   const [board, setBoard] = useState(boardConst);
-  const [showBanner, setShowBanner] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
   const [winner, setWinner] = useState(null);
-  const [username, setUsername] = useState(null);
-  const [gameId, setGameId] = useState(null);
+
+  const [pieLength, setPieLength] = useState(0);
+  const [initialMoves, setInitialMoves] = useState([]);
+  const [canDecidePie, setCanDecidePie] = useState(false);
 
   const boardRef = useRef(null); // Reference to the board's TouchableOpacity
+
+  function setGameState(gameState, uid) {
+    if (gameState.players !== null) {
+      setOtherPlayer(gameState.players[gameState.players.indexOf(uid) === 0 ? 1 : 0])
+    }
+    if (gameState.turn !== null) {
+      setTurn(gameState.turn === uid)
+    }
+    if (gameState.winner !== null) {
+      setWinner(gameState.winner)
+    }
+    if (gameState.pieLength !== null && gameState.pieLength > 0) {
+      setPieLength(gameState.pieLength)
+    }
+    if (canDecidePie !== true) {
+      setCanDecidePie((gameState.turn !== uid) && (pieces2.length === 0) && (pieces.length === 0))
+    }
+  }
 
   const handlePress = (evt) => {
     if (!turn) {
       alert("It's not your turn!");
       return;
     }
-    console.log(evt)
 
     boardRef.current.measure((x, y, width, height, pageX, pageY) => {
       // Calculate the relative position
@@ -36,15 +56,24 @@ const YGame = () => {
       console.log(pieces2.indexOf(closestPiece.id));
       if (pieces.indexOf(closestPiece.id) != -1 | pieces2.indexOf(closestPiece.id) != -1) {
         alert("Illegal move");
-        setShowBanner(true);
         return
       }
       closestPiece.player = pieces.length % 2 + 1
-      // Add the new piece to the array of pieces
-      writeMove(gameId, pieces.length, closestPiece.id );
 
-      board[closestPiece.id].player = closestPiece.player
-      setBoard(board);
+      if (pieLength > 0 && !canDecidePie) {
+        const newMoves = [...initialMoves, closestPiece];
+        setInitialMoves(newMoves);
+        if (newMoves.length >= pieLength) {
+          writePie(gameId, newMoves); // Write pie for second player to decide on 
+          setInitialMoves([]);
+        }
+      } else {
+        // Add the new piece to the array of pieces
+        writeMove(gameId, pieces.length, closestPiece.id);
+
+        board[closestPiece.id].player = closestPiece.player
+        setBoard(board);
+      }
     });
   };
 
@@ -57,18 +86,12 @@ const YGame = () => {
   useEffect(() => {
     // Array to hold cleanup functions
     const cleanupFunctions = [];
-    if (username) {
-      proposeGame(gameId);
-      
-      // Add the unsubscribe function from each gameState fetch to the array
-      cleanupFunctions.push(hasGameStarted(gameId, setGameStarted));
-      cleanupFunctions.push(getPlayers(gameId, setOtherPlayer));
-      cleanupFunctions.push(getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
-      cleanupFunctions.push(getMoves(gameId, setPieces));
-      cleanupFunctions.push(retrieveWinner(gameId, setWinner));
-      cleanupFunctions.push(getTurn(gameId, setTurn));
-    }
 
+    // Add the unsubscribe function from each gameState fetch to the array
+    cleanupFunctions.push(getGameState(gameId, setGameState));
+    cleanupFunctions.push(getPie(gameId, otherPlayer, canDecidePie, setInitialMoves));
+    cleanupFunctions.push(getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
+    cleanupFunctions.push(getMoves(gameId, setPieces));
     return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
 
   }, [username, gameId, otherPlayer]);
@@ -76,27 +99,44 @@ const YGame = () => {
   return (
     <SafeAreaView style={styles.container}>
       {winner && <GameOverBanner winner={winner} player={username}></GameOverBanner>}
-      {!gameStarted ? <><UsernameInput handleSaveUsername={setUsername} handleSaveGameId={setGameId}></UsernameInput></> : <></>}
-      {console.log("gameStarted:", gameStarted)}
-      {!winner && gameStarted ? (
+      {!winner && (
         <>
+          { pieLength &&
+            <View>
+              {canDecidePie && (
+                <View style={styles.decisionBanner}>
+                  <Button title="Take White's Moves" onPress={() => {acceptPie(false); setCanDecidePie(false)} } color="#4CAF50" />
+                  <Button title="Take Black's Moves" onPress={() => {acceptPie(false); setCanDecidePie(false)} } color="#F44336" />
+                </View>
+              )}
+            </View>
+          }
+
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
               {turn ? `Its your turn ${username}` : "Player 2's Turn"}
             </Text>
           </View>
 
-          <View style={{ marginVertical: 10 }}>
+          <View style={{ marginVertical: 3 }}>
             <Button title="Resign Game" onPress={handleResign} color="#FF6347" />
-          </View>   
-                 
+          </View>
+
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
             <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
               <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
             </TouchableOpacity>
             {console.log("pieces", pieces)}
 
-            {pieces.map(piece => (
+            {initialMoves.map((piece, index) => (
+              <Image
+                key={piece.id}
+                source={index % 2 === 0 ? require('../assets/blackStone.png') : require('../assets/whiteStone.png')}
+                style={[styles.pieceImage, piece.position]}
+              />
+            ))}
+
+            {Array.isArray(pieces) && pieces.map(piece => (
               <Image
                 key={piece}
                 source={require('../assets/whiteStone.png')}
@@ -104,7 +144,7 @@ const YGame = () => {
               />
             ))}
 
-            {pieces2.map(piece => (
+            {Array.isArray(pieces2) && pieces2.map(piece => (
               <Image
                 key={piece}
                 source={require('../assets/blackStone.png')}
@@ -113,7 +153,7 @@ const YGame = () => {
             ))}
           </View>
         </>
-      ) : <></>}
+      )}
     </SafeAreaView>
   );
 };
@@ -161,6 +201,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     color: '#FF0000'
   },
+  decisionBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 10,
+  }
 });
 
 export default YGame;

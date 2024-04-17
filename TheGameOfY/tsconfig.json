@@ -1,4 +1,12 @@
 {
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
+  "compilerOptions": {
+    "allowJs": true,    // Allow JavaScript files to be compiled.
+    "checkJs": false,   // Disable type checking of JavaScript files.
+    "jsx": "react"      // Support for JSX syntax
+  },
+  "extends": "expo/tsconfig.base",
+  "include": [
+    "**/*.js",          // Include all JavaScript files
+    "**/*.jsx"          // Include all JSX files (if using React)
+  ]
 }

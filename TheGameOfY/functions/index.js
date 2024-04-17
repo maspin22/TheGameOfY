@@ -3,6 +3,122 @@ const functions = require('firebase-functions')
 const admin = require('firebase-admin')
 admin.initializeApp()
 
+exports.startGameFromCustomGameId = functions.database.ref('proposal/{gameId}/{uid}/game')
+  .onWrite(async (change, context) => {
+    // Exit if data was deleted
+    if (!change.after.exists()) return null
+
+    const gameId = context.params.gameId
+    const uid = context.params.uid
+    const db = admin.database()
+
+    // Reference to the game proposals
+    const proposalRef = db.ref(`proposal/${gameId}`)
+
+    // Get all proposals for the gameId
+    const proposalsSnapshot = await proposalRef.once('value')
+    const proposals = proposalsSnapshot.val()
+
+    // Check if there are at least two different players
+    if (proposals && Object.keys(proposals).length > 1) {
+      // Assuming the current UID and another random UID are the players
+      const players = Object.keys(proposals)
+
+      // Ensure the current player is part of the game
+      if (!players.includes(uid)) return null
+
+      // Remove current player to prevent matching with self
+      const playerIndex = players.indexOf(uid)
+      players.splice(playerIndex, 1)
+
+      // Randomly select another player
+      const otherPlayerId = players[Math.floor(Math.random() * players.length)]
+
+      // Game initialization data
+      const gameData = {
+        players: [uid, otherPlayerId],
+        turn: Math.random() > 0.5 ? uid : otherPlayerId,
+        hasGameStarted: true,
+        pieLength: change.after.data()
+      }
+
+      // Reference to the game state
+      const gameRef = db.ref(`games/${gameId}/gameState`)
+
+      // Set the game state
+      await gameRef.set(gameData)
+
+      // Optionally, clean up the proposals
+      await proposalRef.remove()
+
+      return null
+    }
+
+    return null
+  })
+
+exports.matchPlayersWithTransaction = functions.database.ref('waitingPool/{uid}')
+  .onWrite(async (change, context) => {
+    // if (!change.after.exists() || !change.after.val()) return null
+
+    const uid = context.params.uid
+    const db = admin.database()
+    const waitingPoolRef = db.ref('waitingPool')
+
+    const waitingPoolSnapshot = await waitingPoolRef.once('value')
+    if (!waitingPoolSnapshot.exists() && !change.after.exists()) {
+      console.log('No players in the pool')
+      return null // No players in the pool
+    }
+    const pieLength = change.after.data()
+    console.log(waitingPoolSnapshot.val())
+
+    const players = waitingPoolSnapshot.val()
+    console.log('players', players)
+    if (!players || Object.keys(players).length < 2) {
+      console.log('Not enough players to match')
+      return null // Not enough players to match
+    }
+
+    console.log(players)
+
+    if (!Object.keys(players).includes(uid)) {
+      console.log('Current player is no longer in the pool')
+      return null // Current player is no longer in the pool
+    }
+
+    delete players[uid] // Remove current player to prevent matching with self
+    const remainingPlayerIds = Object.keys(players)
+    const otherPlayerId = remainingPlayerIds[Math.floor(Math.random() * remainingPlayerIds.length)]
+    const newGameId = db.ref().child('games').push().key
+
+    console.log('otherPlayerId', otherPlayerId)
+    console.log('newGameId', newGameId)
+
+    const gameData = {
+      players: [uid, otherPlayerId],
+      turn: Math.random() > 0.5 ? uid : otherPlayerId,
+      hasGameStarted: true,
+      pieLength
+    }
+
+    console.log('gameData', gameData)
+
+    // Prepare a multi-path update object
+    const updates = {}
+    updates[`games/${newGameId}/gameState`] = gameData
+    updates[`waitingPool/${uid}`] = null
+    updates[`waitingPool/${otherPlayerId}`] = null
+    updates[`users/${uid}/currentGame`] = newGameId // Point to the current game
+    updates[`users/${otherPlayerId}/currentGame`] = newGameId // For the other player as well
+
+    // Execute all updates in one go to ensure atomicity
+    await db.ref().update(updates)
+
+    console.log(`Players matched in game ${newGameId}`)
+    return null
+  })
+
 /**
  * Checks if the last player's move meets the win condition by touching three
  * sides of the board. It uses DFS to explore the connected pieces starting
@@ -86,65 +202,63 @@ exports.checkWinCondition = functions.database.ref('games/{gameId}/moves/{uid}/{
     if (win) {
       // If you're manipulating data, remember to return a Promise
       // For example, here we're arbitrarily setting data on another path
-      return admin.database().ref(`games/${gameId}/gameState/winner`).set(uid)
+      await admin.database().ref(`games/${gameId}/gameState/winner`).set(uid)
+
+      // Fetch the current game state from Firebase Realtime Database
+      const gameRef = db.ref(`games/${gameId}`)
+      const gameSnapshot = await gameRef.once('value')
+      const gameState = gameSnapshot.val()
+
+      const firestore = admin.firestore()
+      await firestore.collection('archivedGames').doc(gameId).set(gameState)
+
+      // delete the game state from Realtime Database
+      await gameRef.remove()
     }
   })
 
-exports.startGameFromCustomGameId = functions.database.ref('proposal/{gameId}/{uid}/game')
+exports.handleResignation = functions.database.ref('proposal/{gameId}/{uid}/resign')
   .onWrite(async (change, context) => {
-    // Exit if data was deleted
-    if (!change.after.exists()) return null
+    const { gameId, uid } = context.params
+    if (change.after.val() === true) {
+      const db = admin.database()
+      const firestore = admin.firestore()
 
-    const gameId = context.params.gameId
-    const uid = context.params.uid
-    const db = admin.database()
+      // Fetch the current game state from Firebase Realtime Database
+      const gameRef = db.ref(`games/${gameId}`)
+      const gameSnapshot = await gameRef.once('value')
+      const gameState = gameSnapshot.val().gameState
 
-    // Reference to the game proposals
-    const proposalRef = db.ref(`proposal/${gameId}`)
-
-    // Get all proposals for the gameId
-    const proposalsSnapshot = await proposalRef.once('value')
-    const proposals = proposalsSnapshot.val()
-
-    // Check if there are at least two different players
-    if (proposals && Object.keys(proposals).length > 1) {
-      // Assuming the current UID and another random UID are the players
-      const players = Object.keys(proposals)
-
-      // Ensure the current player is part of the game
-      if (!players.includes(uid)) return null
-
-      // Remove current player to prevent matching with self
-      const playerIndex = players.indexOf(uid)
-      players.splice(playerIndex, 1)
-
-      // Randomly select another player
-      const otherPlayerId = players[Math.floor(Math.random() * players.length)]
-
-      // Game initialization data
-      const gameData = {
-        players: [uid, otherPlayerId],
-        turn: Math.random() < 0.5 ? uid : otherPlayerId, // Randomly assign who's turn it is
-        hasGameStarted: true
+      if (!gameState) {
+        console.error('Game state not found!')
+        return null
       }
 
-      // Reference to the game state
-      const gameRef = db.ref(`games/${gameId}/gameState`)
+      console.log('Current game state:', gameState)
 
-      // Set the game state
-      await gameRef.set(gameData)
+      // Save the game state to Firestore
+      await firestore.collection('archivedGames').doc(gameId).set(gameSnapshot.val())
 
-      // Optionally, clean up the proposals
-      await proposalRef.remove()
+      // Set the winner and update the game as not started
+      const players = gameState.players
+      const otherPlayerIndex = players.indexOf(uid) === 0 ? 1 : 0
+      const otherPlayerId = players[otherPlayerIndex]
+      await gameRef.child('winner').set(otherPlayerId)
 
-      return null
+      // delete the game state from Realtime Database
+      await gameRef.remove()
+
+      console.log('Game state archived and original deleted.')
     }
 
     return null
   })
 
-exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves/{uid}/{moveNumber}')
+exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves/{uid}')
   .onWrite(async (change, context) => {
+    // if (!change.after.exists()){ return null }
+    // if (change.after.data().pie)
+
     // You can access path wildcards via context.params
     const gameId = context.params.gameId
     const uid = context.params.uid
@@ -164,28 +278,4 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
     console.log(otherPlayerId)
     // Set the game state's turn property to the other player's ID
     await db.ref(`games/${gameId}/gameState/turn`).set(otherPlayerId)
-  })
-
-exports.handleResignation = functions.database.ref('proposal/{gameId}/{uid}/resign')
-  .onWrite(async (change, context) => {
-    // You can access path wildcards via context.params
-    const gameId = context.params.gameId
-    const uid = context.params.uid
-    if (change.after.val() === true) {
-      const db = admin.database()
-      const gameRef = db.ref(`games/${gameId}/gameState`)
-
-      const gameSnapshot = await gameRef.once('value')
-      const game = gameSnapshot.val()
-      console.log(game)
-      const players = game.players
-      const playerIndex = players.indexOf(uid)
-
-      // Assuming there are only two players, find the index of the other player
-      const otherPlayerIndex = playerIndex === 0 ? 1 : 0
-      const otherPlayerId = players[otherPlayerIndex] // Get the ID of the other player
-      console.log(otherPlayerId)
-      // Set the game state's turn property to the other player's ID
-      await db.ref(`games/${gameId}/gameState/winner`).set(otherPlayerId)
-    }
   })
