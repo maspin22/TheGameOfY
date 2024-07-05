@@ -156,7 +156,7 @@ export function getOtherPlayersMoves(gameId, otherPlayerId, success) {
     // Use onValue to listen for changes in real-time
     const unsubscribe = onValue(gameStateRef, (snapshot) => {
         if (snapshot.exists() &&snapshot.val() !== null ) {
-            console.log("Retrieved game state: ", snapshot.val());
+            console.log("Other Players Moves: ", snapshot.val());
             // format val unto nice array 
             success(snapshot.val()); // Invoke the callback with the new game state
         } else {

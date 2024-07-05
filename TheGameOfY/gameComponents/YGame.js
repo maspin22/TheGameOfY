@@ -15,9 +15,8 @@ const YGame = ({ route }) => {
   const [board, setBoard] = useState(boardConst);
   const [winner, setWinner] = useState(null);
 
-  const [pieLength, setPieLength] = useState(0);
-  const [initialMoves, setInitialMoves] = useState([]);
-  const [canDecidePie, setCanDecidePie] = useState(false);
+  // const [initialMoves, setInitialMoves] = useState([]);
+  // const [canDecidePie, setCanDecidePie] = useState(false);
 
   const boardRef = useRef(null); // Reference to the board's TouchableOpacity
 
@@ -31,12 +30,9 @@ const YGame = ({ route }) => {
     if (gameState.winner !== null) {
       setWinner(gameState.winner)
     }
-    if (gameState.pieLength !== null && gameState.pieLength > 0) {
-      setPieLength(gameState.pieLength)
-    }
-    if (canDecidePie !== true) {
-      setCanDecidePie((gameState.turn !== uid) && (pieces2.length === 0) && (pieces.length === 0))
-    }
+    // if (canDecidePie !== true) {
+    //   setCanDecidePie((gameState.turn !== uid) && (pieces2.length === 0) && (pieces.length === 0))
+    // }
   }
 
   const handleMove = (evt) => {
@@ -59,20 +55,22 @@ const YGame = ({ route }) => {
       }
       closestPiece.player = pieces.length % 2 + 1
 
-      if (pieLength > 0 && !canDecidePie) {
-        const newMoves = [...initialMoves, closestPiece];
-        setInitialMoves(newMoves);
-        if (newMoves.length >= pieLength) {
-          writePie(gameId, newMoves); // Write pie for second player to decide on 
-          setInitialMoves([]);
-        }
-      } else {
-        // Add the new piece to the array of pieces
-        writeMove(gameId, pieces.length, closestPiece.id);
+      writeMove(gameId, pieces.length, closestPiece.id);
 
-        board[closestPiece.id].player = closestPiece.player
-        setBoard(board);
-      }
+      board[closestPiece.id].player = closestPiece.player
+      setBoard(board);
+
+      // if (!canDecidePie) {
+      //   const newMoves = [...initialMoves, closestPiece];
+      //   setInitialMoves(newMoves);
+      //   if (newMoves.length >= 3) {
+      //     writePie(gameId, newMoves); // Write pie for second player to decide on 
+      //     // setInitialMoves([]);
+      //   }
+      // } else {
+      //   // Add the new piece to the array of pieces
+        
+      // }
     });
   };
 
@@ -87,7 +85,7 @@ const YGame = ({ route }) => {
 
     // Add the unsubscribe function from each gameState fetch to the array
     cleanupFunctions.push(getGameState(gameId, setGameState));
-    cleanupFunctions.push(getPie(gameId, otherPlayer, canDecidePie, setInitialMoves));
+    // cleanupFunctions.push(getPie(gameId, otherPlayer, canDecidePie, setInitialMoves));
     cleanupFunctions.push(getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
     cleanupFunctions.push(getMoves(gameId, setPieces));
     return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
@@ -99,7 +97,7 @@ const YGame = ({ route }) => {
       {winner && <GameOverBanner winner={winner} ></GameOverBanner>}
       {!winner && (
         <>
-          { pieLength &&
+          {/* {
             <View>
               {canDecidePie && (
                 <View style={styles.decisionBanner}>
@@ -108,7 +106,7 @@ const YGame = ({ route }) => {
                 </View>
               )}
             </View>
-          }
+          } */}
 
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
@@ -126,13 +124,13 @@ const YGame = ({ route }) => {
             </TouchableOpacity>
             {console.log("pieces", pieces)}
 
-            {initialMoves.map((piece, index) => (
+            {/* {initialMoves.map((piece, index) => (
               <Image
                 key={piece.id}
                 source={index % 2 === 0 ? require('../assets/blackStone.png') : require('../assets/whiteStone.png')}
                 style={[styles.pieceImage, piece.position]}
               />
-            ))}
+            ))} */}
 
             {Array.isArray(pieces) && pieces.map(piece => (
               <Image

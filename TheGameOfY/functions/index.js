@@ -308,6 +308,7 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
           await movesRef.child(uid).update({ pieces: oddIndexedMoves })
           await movesRef.child(otherPlayerId).update({ pieces: evenIndexedMoves })
         }
+        await moveData.update({ acceptedPie: null })
       }
     }
 
