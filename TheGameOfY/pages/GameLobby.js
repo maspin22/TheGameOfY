@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, Text, TouchableOpacity, StyleSheet, Button, View, TextInput } from 'react-native';
 import { signInWithGoogle } from './SignIn';
-import { proposeGame, askToGetMatched, getMatchedGameId, hasGameStarted } from '../database/db_access';
+import { proposeGame, askToGetMatched, getMatchedGameId, hasGameStarted, cleanUpWaiting } from '../database/db_access';
 import { authentication } from '../database/firebase-config';
 import { nanoid } from 'nanoid'; 
 
 const GameLobby = ({ navigation }) => {
-  const [usernameText, setUsernameText] = useState('');
-  const [username, setUsername] = useState();
   const [gameId, setGameId] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [joinGameId, setJoinGameId] = useState('');
@@ -72,7 +70,7 @@ const GameLobby = ({ navigation }) => {
   
     const cleanupFunctions = [
       getMatchedGameId(setGameId),
-      hasGameStarted(gameId, setGameStarted)
+      hasGameStarted(gameId, setGameStarted, cleanUpWaiting)
     ];
   
     navigation.setOptions({
@@ -83,16 +81,15 @@ const GameLobby = ({ navigation }) => {
       )
     });
   
-    console.log("username gameId", username, gameId)
-    if (username && gameId && gameStarted) {
-      navigation.navigate('YGame', { username: username, gameId: gameId });
+    if (gameId && gameStarted) {
+      navigation.navigate('YGame', { gameId: gameId });
     }
 
     return () => {
       unsubscribeAuth();
       cleanupFunctions.forEach(cleanup => cleanup && cleanup());
     };
-  }, [navigation, gameId, username, gameStarted]);
+  }, [navigation, gameId, gameStarted]);
   
 
   return (
@@ -121,21 +118,6 @@ const GameLobby = ({ navigation }) => {
           <Button title="Join Challenge" onPress={handleJoinChallenge} />
         </>
       )}
-      {
-        !username && 
-        (
-          <>
-            <TextInput
-              style={styles.input}
-              onChangeText={text => setUsernameText(text)}
-              value={username}
-              placeholder="Enter your username"
-              returnKeyType="done" 
-            />
-            <Button title="Submit" onPress={() => setUsername(usernameText)} />
-          </>
-        )
-      }
     </SafeAreaView>
   );
 };

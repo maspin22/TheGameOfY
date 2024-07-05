@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
 import GameOverBanner from './GameOverBanner';
-import { getOtherPlayersMoves, writeMove, resignGame, getMoves, getGameState, getPie } from '../database/db_access';
+import { getOtherPlayersMoves, writeMove, resignGame, getMoves, getGameState, getPie, writePie, acceptPie } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
 
 const YGame = ({ route }) => {
-  const { username, gameId } = route.params;
-  console.log('Imported username:', username); // Uses imported username
-  console.log('Route gameId:', gameId); // Uses username from route.params
+  const { gameId } = route.params;
+  console.log('Route gameId:', gameId); 
 
   const [pieces, setPieces] = useState([]); // Array to hold piece objects
   const [pieces2, setOtherPlayersPieces] = useState([]); // Array to hold piece objects
@@ -40,7 +39,7 @@ const YGame = ({ route }) => {
     }
   }
 
-  const handlePress = (evt) => {
+  const handleMove = (evt) => {
     if (!turn) {
       alert("It's not your turn!");
       return;
@@ -52,9 +51,9 @@ const YGame = ({ route }) => {
       const top = evt.nativeEvent.pageY - pageY - 10;
       const closestPiece = findClosestPiece(left, top, board)
 
-      console.log(pieces.indexOf(closestPiece.id));
-      console.log(pieces2.indexOf(closestPiece.id));
-      if (pieces.indexOf(closestPiece.id) != -1 | pieces2.indexOf(closestPiece.id) != -1) {
+      // console.log(pieces.indexOf(closestPiece.id));
+      // console.log(pieces2.indexOf(closestPiece.id));
+      if (Array.isArray(pieces) && pieces.indexOf(closestPiece.id) != -1 | Array.isArray(pieces2) && pieces2.indexOf(closestPiece.id) != -1) {
         alert("Illegal move");
         return
       }
@@ -77,7 +76,6 @@ const YGame = ({ route }) => {
     });
   };
 
-  // this is brokem just make you win lol 
   const handleResign = () => {
     resignGame(gameId);
   };
@@ -94,19 +92,19 @@ const YGame = ({ route }) => {
     cleanupFunctions.push(getMoves(gameId, setPieces));
     return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
 
-  }, [username, gameId, otherPlayer]);
+  }, [gameId, otherPlayer]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {winner && <GameOverBanner winner={winner} player={username}></GameOverBanner>}
+      {winner && <GameOverBanner winner={winner} ></GameOverBanner>}
       {!winner && (
         <>
           { pieLength &&
             <View>
               {canDecidePie && (
                 <View style={styles.decisionBanner}>
-                  <Button title="Take White's Moves" onPress={() => {acceptPie(false); setCanDecidePie(false)} } color="#4CAF50" />
-                  <Button title="Take Black's Moves" onPress={() => {acceptPie(false); setCanDecidePie(false)} } color="#F44336" />
+                  <Button title="Take White's Moves" onPress={() => {console.log("here"); acceptPie(gameId, "true"); setCanDecidePie(false)} } color="#4CAF50" />
+                  <Button title="Take Black's Moves" onPress={() => {acceptPie(gameId, false); setCanDecidePie(false)} } color="#F44336" />
                 </View>
               )}
             </View>
@@ -114,7 +112,7 @@ const YGame = ({ route }) => {
 
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
-              {turn ? `Its your turn ${username}` : "Player 2's Turn"}
+              {turn ? `Its your turn` : "Player 2's Turn"}
             </Text>
           </View>
 
@@ -123,7 +121,7 @@ const YGame = ({ route }) => {
           </View>
 
           <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
-            <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
+            <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
               <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
             </TouchableOpacity>
             {console.log("pieces", pieces)}

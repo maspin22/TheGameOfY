@@ -22,6 +22,18 @@ export function proposeGame(gameId) {
     }
 }
 
+export function cleanUpWaiting() {
+    if (authentication.currentUser) {
+        const uid = authentication.currentUser.uid;
+        // Create a reference to the specific path
+        const proposalRef = ref(db, `proposal/deleteUser/${uid}`);
+        // The set value represent's the pie length 
+        set(proposalRef, true).then(() => {
+        }).catch((error) => {
+        });
+    }
+}
+
 // Get matched
 export function askToGetMatched() {
     if (authentication.currentUser) {
@@ -109,6 +121,7 @@ export function acceptPie(gameId, accept) {
     if (authentication.currentUser) {
         const uid = authentication.currentUser.uid;
         console.log(uid);
+        console.log(accept)
         // Create a reference to the specific path
         const pieRef = ref(db, `games/${gameId}/moves/${uid}/acceptedPie`);
         // Set the value
@@ -261,12 +274,13 @@ export function retrieveWinner(gameId, success) {
 
 // save this for devoted use for now 
 // Function to get hasGameStarted
-export function hasGameStarted(gameId, success) {
+export function hasGameStarted(gameId, success, after) {
     const hasGameStartedRef = ref(db, `games/${gameId}/gameState/hasGameStarted`);
     const unsubscribe = onValue(hasGameStartedRef, (snapshot) => {
         if (snapshot.exists()) {
             console.log("Retrieved hasGameStarted: ", snapshot.val());
             success(snapshot.val());
+            after();
         } 
     }, (error) => {
         console.error("Error retrieving turn state: ", error);

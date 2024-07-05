@@ -5,7 +5,7 @@ import { authentication } from '../database/firebase-config';
 
 const { width } = Dimensions.get('window'); // Get the screen width
 
-const GameOverBanner = ({ winner, player }) => {
+const GameOverBanner = ({ winner }) => {
   if ( winner === null ){
     throw Error("winner required")
   }

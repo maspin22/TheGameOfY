@@ -39,7 +39,8 @@ exports.startGameFromCustomGameId = functions.database.ref('proposal/{gameId}/{u
         players: [uid, otherPlayerId],
         turn: Math.random() > 0.5 ? uid : otherPlayerId,
         hasGameStarted: true,
-        pieLength: change.after.data()
+        pieLength: change.after.val(),
+        lastUpdated: admin.database.ServerValue.TIMESTAMP // Setting the lastUpdated timestamp
       }
 
       // Reference to the game state
@@ -70,7 +71,7 @@ exports.matchPlayersWithTransaction = functions.database.ref('waitingPool/{uid}'
       console.log('No players in the pool')
       return null // No players in the pool
     }
-    const pieLength = change.after.data()
+    const pieLength = change.after.val()
     console.log(waitingPoolSnapshot.val())
 
     const players = waitingPoolSnapshot.val()
@@ -99,7 +100,8 @@ exports.matchPlayersWithTransaction = functions.database.ref('waitingPool/{uid}'
       players: [uid, otherPlayerId],
       turn: Math.random() > 0.5 ? uid : otherPlayerId,
       hasGameStarted: true,
-      pieLength
+      pieLength,
+      lastUpdated: admin.database.ServerValue.TIMESTAMP // Setting the lastUpdated timestamp
     }
 
     console.log('gameData', gameData)
@@ -202,7 +204,10 @@ exports.checkWinCondition = functions.database.ref('games/{gameId}/moves/{uid}/{
     if (win) {
       // If you're manipulating data, remember to return a Promise
       // For example, here we're arbitrarily setting data on another path
-      await admin.database().ref(`games/${gameId}/gameState/winner`).set(uid)
+      await admin.database().ref(`games/${gameId}/gameState`).update({
+        winner: uid,
+        lastUpdated: admin.database.ServerValue.TIMESTAMP // Update lastUpdated timestamp
+      })
 
       // Fetch the current game state from Firebase Realtime Database
       const gameRef = db.ref(`games/${gameId}`)
@@ -256,16 +261,14 @@ exports.handleResignation = functions.database.ref('proposal/{gameId}/{uid}/resi
 
 exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves/{uid}')
   .onWrite(async (change, context) => {
-    // if (!change.after.exists()){ return null }
-    // if (change.after.data().pie)
-
-    // You can access path wildcards via context.params
+    // Get the value after the change
+    const moveData = change.after.val()
     const gameId = context.params.gameId
     const uid = context.params.uid
+
     // TODO: Validate the move
     const db = admin.database()
     const gameRef = db.ref(`games/${gameId}/gameState`)
-
     const gameSnapshot = await gameRef.once('value')
     const game = gameSnapshot.val()
     console.log(game)
@@ -276,6 +279,85 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
     const otherPlayerIndex = playerIndex === 0 ? 1 : 0
     const otherPlayerId = players[otherPlayerIndex] // Get the ID of the other player
     console.log(otherPlayerId)
+
+    // Check if there's a decision about the pie rule
+    if (moveData.acceptedPie !== null) {
+      const movesRef = admin.database().ref(`games/${gameId}/moves`)
+
+      // Fetch the pie moves
+      const pieSnapshot = await movesRef.child(`${uid}/pie`).once('value')
+      if (pieSnapshot.exists()) {
+        const pieMoves = pieSnapshot.val()
+        const evenIndexedMoves = {}
+        const oddIndexedMoves = {}
+
+        // Segregate moves into even and odd indexed
+        Object.keys(pieMoves).forEach((key, index) => {
+          if (index % 2 === 0) {
+            evenIndexedMoves[key] = pieMoves[key]
+          } else {
+            oddIndexedMoves[key] = pieMoves[key]
+          }
+        })
+
+        // If pie rule is accepted, apply the moves to the accepting player's set of moves
+        if (moveData.acceptedPie === true) {
+          await movesRef.child(uid).update({ pieces: evenIndexedMoves })
+          await movesRef.child(otherPlayerId).update({ pieces: oddIndexedMoves })
+        } else {
+          await movesRef.child(uid).update({ pieces: oddIndexedMoves })
+          await movesRef.child(otherPlayerId).update({ pieces: evenIndexedMoves })
+        }
+      }
+    }
+
     // Set the game state's turn property to the other player's ID
-    await db.ref(`games/${gameId}/gameState/turn`).set(otherPlayerId)
+    await db.ref(`games/${gameId}/gameState`).update({
+      turn: otherPlayerId,
+      lastUpdated: admin.database.ServerValue.TIMESTAMP // Update lastUpdated timestamp
+    })
+  })
+
+exports.cleanupOldGames = functions.pubsub.schedule('every 60 minutes').onRun(async (context) => {
+  const db = admin.database()
+  const gamesRef = db.ref('games')
+
+  const now = Date.now()
+  const cutoff = now - 60 * 60 * 1000 // 60 minutes in milliseconds
+
+  const oldGamesSnapshot = await gamesRef.orderByChild('lastUpdated').endAt(cutoff).once('value')
+
+  if (oldGamesSnapshot.exists()) {
+    const updates = {}
+    oldGamesSnapshot.forEach(childSnapshot => {
+      updates[childSnapshot.key] = null // Setting values to null will remove them from the database
+    })
+
+    // Perform the cleanup
+    await gamesRef.update(updates)
+    console.log('Old games cleaned up:', updates)
+  } else {
+    console.log('No old games to clean up')
+  }
+
+  return null
+})
+
+exports.deleteUserWhenMatched = functions.database.ref('proposal/deleteUser/{uid}')
+  .onWrite(async (change, context) => {
+    // Exit if data was deleted
+    if (!change.after.exists()) return null
+
+    const uid = context.params.uid
+    const db = admin.database()
+
+    // Reference to the game proposals
+    const proposalRef = db.ref(`proposal/deleteUser/${uid}`)
+    // Remove the user's proposal entry
+    await proposalRef.remove()
+
+    const userRef = db.ref(`users/${uid}`)
+    await userRef.remove()
+
+    return null
   })
