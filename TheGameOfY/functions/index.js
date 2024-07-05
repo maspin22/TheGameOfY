@@ -225,44 +225,46 @@ exports.checkWinCondition = functions.database.ref('games/{gameId}/moves/{uid}/{
 exports.handleResignation = functions.database.ref('proposal/{gameId}/{uid}/resign')
   .onWrite(async (change, context) => {
     const { gameId, uid } = context.params
+    const db = admin.database()
+
     if (change.after.val() === true) {
-      const db = admin.database()
-      const firestore = admin.firestore()
+      const gameStateRef = db.ref(`games/${gameId}/gameState`)
+      const gameStateSnapshot = await gameStateRef.once('value')
+      const game = gameStateSnapshot.val()
+
+      console.log(game)
+      const players = game.players
+      const playerIndex = players.indexOf(uid)
+
+      // Assuming there are only two players, find the index of the other player
+      const otherPlayerIndex = playerIndex === 0 ? 1 : 0
+      const otherPlayerId = players[otherPlayerIndex] // Get the ID of the other player
+      console.log(otherPlayerId)
+
+      // If you're manipulating data, remember to return a Promise
+      // For example, here we're arbitrarily setting data on another path
+      await db.ref(`games/${gameId}/gameState`).update({
+        winner: otherPlayerId,
+        lastUpdated: admin.database.ServerValue.TIMESTAMP // Update lastUpdated timestamp
+      })
 
       // Fetch the current game state from Firebase Realtime Database
       const gameRef = db.ref(`games/${gameId}`)
       const gameSnapshot = await gameRef.once('value')
-      const gameState = gameSnapshot.val().gameState
+      const gameState = gameSnapshot.val()
 
-      if (!gameState) {
-        console.error('Game state not found!')
-        return null
-      }
-
-      console.log('Current game state:', gameState)
-
-      // Save the game state to Firestore
-      await firestore.collection('archivedGames').doc(gameId).set(gameSnapshot.val())
-
-      // Set the winner and update the game as not started
-      const players = gameState.players
-      const otherPlayerIndex = players.indexOf(uid) === 0 ? 1 : 0
-      const otherPlayerId = players[otherPlayerIndex]
-      await gameRef.child('winner').set(otherPlayerId)
+      const firestore = admin.firestore()
+      await firestore.collection('archivedGames').doc(gameId).set(gameState)
 
       // delete the game state from Realtime Database
       await gameRef.remove()
-
-      console.log('Game state archived and original deleted.')
     }
-
-    return null
   })
 
 exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves/{uid}')
   .onWrite(async (change, context) => {
     // Get the value after the change
-    const moveData = change.after.val()
+    // const moveData = change.after.val()
     const gameId = context.params.gameId
     const uid = context.params.uid
 
@@ -281,36 +283,36 @@ exports.validateMoveAndChangeTurn = functions.database.ref('games/{gameId}/moves
     console.log(otherPlayerId)
 
     // Check if there's a decision about the pie rule
-    if (moveData.acceptedPie !== null) {
-      const movesRef = admin.database().ref(`games/${gameId}/moves`)
+    // if (moveData.acceptedPie !== null) {
+    //   const movesRef = admin.database().ref(`games/${gameId}/moves`)
 
-      // Fetch the pie moves
-      const pieSnapshot = await movesRef.child(`${uid}/pie`).once('value')
-      if (pieSnapshot.exists()) {
-        const pieMoves = pieSnapshot.val()
-        const evenIndexedMoves = {}
-        const oddIndexedMoves = {}
+    //   // Fetch the pie moves
+    //   const pieSnapshot = await movesRef.child(`${uid}/pie`).once('value')
+    //   if (pieSnapshot.exists()) {
+    //     const pieMoves = pieSnapshot.val()
+    //     const evenIndexedMoves = {}
+    //     const oddIndexedMoves = {}
 
-        // Segregate moves into even and odd indexed
-        Object.keys(pieMoves).forEach((key, index) => {
-          if (index % 2 === 0) {
-            evenIndexedMoves[key] = pieMoves[key]
-          } else {
-            oddIndexedMoves[key] = pieMoves[key]
-          }
-        })
+    //     // Segregate moves into even and odd indexed
+    //     Object.keys(pieMoves).forEach((key, index) => {
+    //       if (index % 2 === 0) {
+    //         evenIndexedMoves[key] = pieMoves[key]
+    //       } else {
+    //         oddIndexedMoves[key] = pieMoves[key]
+    //       }
+    //     })
 
-        // If pie rule is accepted, apply the moves to the accepting player's set of moves
-        if (moveData.acceptedPie === true) {
-          await movesRef.child(uid).update({ pieces: evenIndexedMoves })
-          await movesRef.child(otherPlayerId).update({ pieces: oddIndexedMoves })
-        } else {
-          await movesRef.child(uid).update({ pieces: oddIndexedMoves })
-          await movesRef.child(otherPlayerId).update({ pieces: evenIndexedMoves })
-        }
-        await moveData.update({ acceptedPie: null })
-      }
-    }
+    //     // If pie rule is accepted, apply the moves to the accepting player's set of moves
+    //     if (moveData.acceptedPie === true) {
+    //       await movesRef.child(uid).update({ pieces: evenIndexedMoves })
+    //       await movesRef.child(otherPlayerId).update({ pieces: oddIndexedMoves })
+    //     } else {
+    //       await movesRef.child(uid).update({ pieces: oddIndexedMoves })
+    //       await movesRef.child(otherPlayerId).update({ pieces: evenIndexedMoves })
+    //     }
+    //     await moveData.update({ acceptedPie: null })
+    //   }
+    // }
 
     // Set the game state's turn property to the other player's ID
     await db.ref(`games/${gameId}/gameState`).update({

@@ -15,7 +15,7 @@ function App() {
     <ErrorBoundary>
       <NavigationContainer >
         <Stack.Navigator>
-          <Stack.Screen name="FrontPage" component={FrontPage} options={{ title: 'Welcome' }}/>
+          <Stack.Screen name="FrontPage" component={FrontPage} options={{ title: 'Home' }}/>
           <Stack.Screen name="GameLobby" component={GameLobby} options={{ title: 'Lobby' }}/>
           <Stack.Screen name="YGame" component={YGame} options={{ title: 'YGame' }}/>
           <Stack.Screen name="YGameLocal" component={YGameLocal} options={{ title: 'YGame Local' }}/>

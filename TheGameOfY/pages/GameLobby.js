@@ -34,7 +34,7 @@ const GameLobby = ({ navigation }) => {
   const handleCreateChallenge = () => {
     handleSignIn(() => {
       console.log('Create Your Own Challenge selected');
-      const newGameId = nanoid();
+      const newGameId = nanoid(6).replace("-", "0");
       proposeGame(newGameId);
       setGameId(newGameId); // Assuming you want to update the gameId state here as well
     });
@@ -45,9 +45,11 @@ const GameLobby = ({ navigation }) => {
       alert('Please enter a valid Game ID to join.');
       return;
     }
-    console.log('Attempting to join game with ID:', joinGameId);
-    proposeGame(joinGameId)
-    setGameId(joinGameId); 
+    handleSignIn(() => {
+      console.log('Attempting to join game with ID:', joinGameId);
+      proposeGame(joinGameId)
+      setGameId(joinGameId); 
+    });
   };
   
 
@@ -101,9 +103,11 @@ const GameLobby = ({ navigation }) => {
           <Text style={styles.text}>Local Play</Text>
           </TouchableOpacity><TouchableOpacity style={styles.option} onPress={handleCreateChallenge}>
             <Text style={styles.text}>Create Your Own Challenge</Text>
-          </TouchableOpacity><TouchableOpacity style={styles.option} onPress={handleGetMatched}>
+          </TouchableOpacity>
+          {/* <TouchableOpacity style={styles.option} onPress={handleGetMatched}>
             <Text style={styles.text}>Get Matched by the Server</Text>
-          </TouchableOpacity></>) : <></>
+          </TouchableOpacity> */}
+          </>) : <></>
       }
       {console.log("gameId gameStarted:", gameId, gameStarted)}
       { !gameId && (

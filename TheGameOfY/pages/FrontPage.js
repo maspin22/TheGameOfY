@@ -6,18 +6,19 @@ const FrontPage = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Welcome to the Y Game</Text>
       <Text style={styles.description}>
-        Y is an abstract strategy board game known for its deep strategic play. 
+        Y is an abstract strategy board game known for its strategic play. 
         It's played on a triangular board with hexagonal spaces. The objective 
         is to connect all three sides of the board with your pieces.
       </Text>
       <Text style={styles.rulesTitle}>Rules:</Text>
       <Text style={styles.rules}>
         1. Players take turns placing one stone of their color on the board.{"\n"}
-        2. The first player to connect all three sides of the board wins.{"\n"}
-        3. The pie rule can be used to mitigate the first-move advantage.
+        2. The first player to connect all three sides (with a continuous string of pieces) wins.{"\n"}
+        3. The corner's count as the two sides it coonects. 
       </Text>
       <Text style={styles.note}>
-        Y is praised for its simplicity and complexity, offering endless strategic possibilities.
+        Y is praised for its simplicity and complexity. Learn more @ 
+        <a href="https://en.wikipedia.org/wiki/Y_(game)" rel="noreferrer"> Wiki </a>        
       </Text>
       <Button
         title="Go to Lobby"
