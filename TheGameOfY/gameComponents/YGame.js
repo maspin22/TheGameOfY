@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
-import { getOtherPlayersMoves, writeMove, resignGame, getMoves, getGameState, getPie, writePie, acceptPie } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
 import { authentication } from '../database/firebase-config';
+import DBAccess from '../database/db_access.js';
 
 const YGame = ({ route }) => {
-  const { gameId } = route.params;
+  const { gameId, userId } = route.params;
   console.log('Route gameId:', gameId); 
+  console.log('Route userId:', userId); 
+  const dbAccess = new DBAccess(userId)
 
   const [pieces, setPieces] = useState([]); // Array to hold piece objects
   const [pieces2, setOtherPlayersPieces] = useState([]); // Array to hold piece objects
@@ -56,7 +58,7 @@ const YGame = ({ route }) => {
       }
       closestPiece.player = pieces.length % 2 + 1
 
-      writeMove(gameId, pieces.length, closestPiece.id);
+      dbAccess.writeMove(gameId, pieces.length, closestPiece.id);
 
       board[closestPiece.id].player = closestPiece.player
       setBoard(board);
@@ -76,7 +78,7 @@ const YGame = ({ route }) => {
   };
 
   const handleResign = () => {
-    resignGame(gameId);
+    dbAccess.resignGame(gameId);
   };
 
   // Initial setup: check player count and fetch game state
@@ -85,10 +87,10 @@ const YGame = ({ route }) => {
     const cleanupFunctions = [];
 
     // Add the unsubscribe function from each gameState fetch to the array
-    cleanupFunctions.push(getGameState(gameId, setGameState));
+    cleanupFunctions.push(dbAccess.getGameState(gameId, setGameState));
     // cleanupFunctions.push(getPie(gameId, otherPlayer, canDecidePie, setInitialMoves));
-    cleanupFunctions.push(getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
-    cleanupFunctions.push(getMoves(gameId, setPieces));
+    cleanupFunctions.push(dbAccess.getOtherPlayersMoves(gameId, otherPlayer, setOtherPlayersPieces));
+    cleanupFunctions.push(dbAccess.getMoves(gameId, setPieces));
     return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
 
   }, [gameId, otherPlayer]);
@@ -100,14 +102,14 @@ const YGame = ({ route }) => {
           <Text style={styles.bannerText}>
             {
               authentication.currentUser && 
-              (winner === authentication.currentUser.uid ? `Congratulations, you won!` : `Game Over! The other player won`)
+              (winner === userId ? `Congratulations, you won!` : `Game Over! The other player won`)
             }
           </Text>
         </View>
       }
       <View style={styles.banner}>
         <Text style={styles.bannerText}>
-          {turn ? `It's your turn` : "Player 2's Turn"}
+          {turn ? `Your turn` : "Other player's Turn"}
         </Text>
       </View>
 

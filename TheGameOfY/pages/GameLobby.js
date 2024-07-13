@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, Text, TouchableOpacity, StyleSheet, Button, View, TextInput } from 'react-native';
 import { signInWithGoogle } from './SignIn';
-import { proposeGame, askToGetMatched, getMatchedGameId, hasGameStarted, cleanUpWaiting } from '../database/db_access';
 import { authentication } from '../database/firebase-config';
 import { nanoid } from 'nanoid'; 
+import DBAccess from '../database/db_access.js';
 
 const GameLobby = ({ navigation }) => {
   const [gameId, setGameId] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [joinGameId, setJoinGameId] = useState('');
+  const [userId, setUserId] = useState(nanoid());
+  console.log("GameLobby id", userId)
+  const dbAccess = new DBAccess(userId);
 
   const handleSignIn = (callback) => {
     if (authentication.currentUser) {
@@ -34,8 +37,8 @@ const GameLobby = ({ navigation }) => {
   const handleCreateChallenge = () => {
     handleSignIn(() => {
       console.log('Create Your Own Challenge selected');
-      const newGameId = nanoid(6).replace("-", "0");
-      proposeGame(newGameId);
+      const newGameId = nanoid(7).replace("-", "0").replace("_", "1");
+      dbAccess.proposeGame(newGameId);
       setGameId(newGameId); // Assuming you want to update the gameId state here as well
     });
   };
@@ -45,20 +48,18 @@ const GameLobby = ({ navigation }) => {
       alert('Please enter a valid Game ID to join.');
       return;
     }
-    handleSignIn(() => {
-      console.log('Attempting to join game with ID:', joinGameId);
-      proposeGame(joinGameId)
-      setGameId(joinGameId); 
-    });
+    console.log('Attempting to join game with ID:', joinGameId);
+    dbAccess.proposeGame(joinGameId)
+    setGameId(joinGameId); 
   };
   
 
-  const handleGetMatched = () => {
-    handleSignIn(() => {
-      console.log('Get Matched by the Server selected');
-      askToGetMatched();
-    });
-  };
+  // const handleGetMatched = () => {
+  //   handleSignIn(() => {
+  //     console.log('Get Matched by the Server selected');
+  //     askToGetMatched();
+  //   });
+  // };
 
   useEffect(() => {
     const unsubscribeAuth = authentication.onAuthStateChanged(user => {
@@ -71,8 +72,8 @@ const GameLobby = ({ navigation }) => {
     });
   
     const cleanupFunctions = [
-      getMatchedGameId(setGameId),
-      hasGameStarted(gameId, setGameStarted, cleanUpWaiting)
+      // getMatchedGameId(setGameId),
+      dbAccess.hasGameStarted(gameId, setGameStarted, dbAccess.cleanUpWaiting)
     ];
   
     navigation.setOptions({
@@ -84,7 +85,7 @@ const GameLobby = ({ navigation }) => {
     });
   
     if (gameId && gameStarted) {
-      navigation.navigate('YGame', { gameId: gameId });
+      navigation.navigate('YGame', { gameId: gameId, userId: dbAccess.getUserId() });
     }
 
     return () => {
