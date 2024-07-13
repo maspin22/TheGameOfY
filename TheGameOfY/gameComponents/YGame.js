@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
-import GameOverBanner from './GameOverBanner';
 import { getOtherPlayersMoves, writeMove, resignGame, getMoves, getGameState, getPie, writePie, acceptPie } from '../database/db_access';
 import { findClosestPiece, boardConst } from './GameBoard';
+import { authentication } from '../database/firebase-config';
 
 const YGame = ({ route }) => {
   const { gameId } = route.params;
@@ -14,6 +14,7 @@ const YGame = ({ route }) => {
   const [otherPlayer, setOtherPlayer] = useState('');
   const [board, setBoard] = useState(boardConst);
   const [winner, setWinner] = useState(null);
+  // const [lastPlayedIndex, setLastPlayedIndex] = useState(null); // Track the index of the last played piece
 
   // const [initialMoves, setInitialMoves] = useState([]);
   // const [canDecidePie, setCanDecidePie] = useState(false);
@@ -94,62 +95,53 @@ const YGame = ({ route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {winner && <GameOverBanner winner={winner} ></GameOverBanner>}
-      {!winner && (
-        <>
-          {/* {
-            <View>
-              {canDecidePie && (
-                <View style={styles.decisionBanner}>
-                  <Button title="Take White's Moves" onPress={() => {console.log("here"); acceptPie(gameId, "true"); setCanDecidePie(false)} } color="#4CAF50" />
-                  <Button title="Take Black's Moves" onPress={() => {acceptPie(gameId, false); setCanDecidePie(false)} } color="#F44336" />
-                </View>
-              )}
-            </View>
-          } */}
+      {winner && 
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>
+            {
+              authentication.currentUser && 
+              (winner === authentication.currentUser.uid ? `Congratulations, you won!` : `Game Over! The other player won`)
+            }
+          </Text>
+        </View>
+      }
+      <View style={styles.banner}>
+        <Text style={styles.bannerText}>
+          {turn ? `It's your turn` : "Player 2's Turn"}
+        </Text>
+      </View>
 
-          <View style={styles.banner}>
-            <Text style={styles.bannerText}>
-              {turn ? `Its your turn` : "Player 2's Turn"}
-            </Text>
-          </View>
+      <View style={{ marginVertical: 3 }}>
+        <Button title="Resign Game" onPress={handleResign} color="#FF6347" />
+      </View>
 
-          <View style={{ marginVertical: 3 }}>
-            <Button title="Resign Game" onPress={handleResign} color="#FF6347" />
-          </View>
+      <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
+        <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
+          <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
+        </TouchableOpacity>
+        {Array.isArray(pieces) && pieces.map(piece => (
+          <Image
+            key={piece}
+            source={require('../assets/whiteStone.png')}
+            style={[
+              styles.pieceImage, 
+              boardConst[piece].position,
+            ]}
+          />
+        ))}
 
-          <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
-            <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
-              <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
-            </TouchableOpacity>
-            {console.log("pieces", pieces)}
-
-            {/* {initialMoves.map((piece, index) => (
-              <Image
-                key={piece.id}
-                source={index % 2 === 0 ? require('../assets/blackStone.png') : require('../assets/whiteStone.png')}
-                style={[styles.pieceImage, piece.position]}
-              />
-            ))} */}
-
-            {Array.isArray(pieces) && pieces.map(piece => (
-              <Image
-                key={piece}
-                source={require('../assets/whiteStone.png')}
-                style={[styles.pieceImage, boardConst[piece].position]}
-              />
-            ))}
-
-            {Array.isArray(pieces2) && pieces2.map(piece => (
-              <Image
-                key={piece}
-                source={require('../assets/blackStone.png')}
-                style={[styles.pieceImage, boardConst[piece].position]}
-              />
-            ))}
-          </View>
-        </>
-      )}
+        {Array.isArray(pieces2) && pieces2.map((piece, index) => (
+          <Image
+            key={piece}
+            source={require('../assets/blackStone.png')}
+            style={[
+              styles.pieceImage, 
+              boardConst[piece].position,
+              (pieces2 && index === pieces2.length - 1 && turn) ? styles.lastPlayed : null,
+            ]}
+          />
+        ))}
+      </View>
     </SafeAreaView>
   );
 };
@@ -190,12 +182,21 @@ const styles = StyleSheet.create({
     width: 20, // Adjust based on your piece image size
     height: 20,
     position: 'absolute',
+    borderRadius: 50, // Make the image circular
   },
   pieceImage: {
     width: 20, // Adjust based on your piece image size
     height: 20,
     position: 'absolute',
     color: '#FF0000'
+  },
+  lastPlayed: {
+    shadowColor: '#800080', // Purple glow
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 10,
+    shadowRadius: 6, // Adjust for a more subtle effect
+    elevation: 100, // For Android shadow
+    borderRadius: 50, // Make the shadow circular
   },
   decisionBanner: {
     flexDirection: 'row',

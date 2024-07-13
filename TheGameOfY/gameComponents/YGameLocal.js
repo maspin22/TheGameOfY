@@ -13,14 +13,14 @@ const YGameLocal = () => {
       // Calculate the relative position
       const left = evt.nativeEvent.pageX - pageX - 10; // Adjusting to center the piece
       const top = evt.nativeEvent.pageY - pageY - 10;
-      const closestPiece = findClosestPiece(left, top, board)
+      const closestPiece = findClosestPiece(left, top, board);
 
-      closestPiece.player = playerTurn ? 1 : 2
-      setPieces([...pieces, closestPiece]);
+      closestPiece.player = playerTurn ? 1 : 2;
+      const newPieces = [...pieces, closestPiece];
+      setPieces(newPieces);
 
-      //   alert(`Player ${playerTurn ? '1' : '2'} made a move`);
+      // Alert the turn change
       setPlayerTurn(!playerTurn);
-      console.log(playerTurn)
     });
   };
 
@@ -47,11 +47,15 @@ const YGameLocal = () => {
         <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
           <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
         </TouchableOpacity>
-        {pieces.map(piece => (
+        {pieces.map((piece, index) => (
           <Image
             key={piece.id}
             source={piece.player === 1 ? require('../assets/blackStone.png') : require('../assets/whiteStone.png')}
-            style={[styles.pieceImage, piece.position]}
+            style={[
+              styles.pieceImage,
+              piece.position,
+              (pieces && index === pieces.length - 1) ? styles.lastPlayed : null,
+            ]}
           />
         ))}
       </View>
@@ -94,6 +98,15 @@ const styles = StyleSheet.create({
     width: 20, // Adjust based on your piece image size
     height: 20,
     position: 'absolute',
+    borderRadius: 50, /* Make the image circular */
+  },
+  lastPlayed: {
+    shadowColor: '#800080', // Purple glow
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 10,
+    shadowRadius: 6, // Adjust for a more subtle effect
+    elevation: 100, // For Android shadow
+    borderRadius: 50, // Make the shadow circular
   },
 });
 
