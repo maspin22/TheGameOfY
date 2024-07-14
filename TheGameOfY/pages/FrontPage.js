@@ -1,12 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, View, Text, Button, StyleSheet } from 'react-native';
+import { Linking } from 'react-native';
 
 const FrontPage = ({ navigation }) => {
+  const handleDeepLink = (event) => {
+    const url = event.url;
+    const gameId = url.replace(/.*?:\/\//g, '').split('/')[1];
+    if (gameId) {
+      navigation.navigate('GameLobby', { screen: 'GameLobby', params: { gameId } });
+      window.history.replaceState(null, '', '/');
+      console.log("cleaning up url")
+    }
+  };
+  
+  useEffect(() => {
+    Linking.addEventListener('url', handleDeepLink);
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+    return () => {
+      Linking.removeEventListener('url', handleDeepLink);
+    };
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Welcome to the Y Game</Text>
       <Text style={styles.description}>
-        Y is an abstract strategy board game known for its strategic play. 
+        Y is a board game known for its strategic play. 
         It's played on a triangular board with hexagonal spaces. The objective 
         is to connect all three sides of the board with your pieces.
       </Text>
@@ -14,7 +37,7 @@ const FrontPage = ({ navigation }) => {
       <Text style={styles.rules}>
         1. Players take turns placing one stone of their color on the board.{"\n"}
         2. The first player to connect all three sides (with a continuous string of pieces) wins.{"\n"}
-        3. The corner's count as the two sides it coonects. 
+        3. The corner's count as the two sides it connects. 
       </Text>
       <Text style={styles.note}>
         Y is praised for its simplicity and complexity. Learn more @ 
