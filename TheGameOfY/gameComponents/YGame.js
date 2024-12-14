@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text }
 import { findClosestPiece, boardConst } from './GameBoard';
 import { authentication } from '../database/firebase-config';
 import DBAccess from '../database/db_access.js';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const YGame = ({ route }) => {
   const { gameId, userId } = route.params;
@@ -96,75 +97,116 @@ const YGame = ({ route }) => {
   }, [gameId, otherPlayer]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {winner && 
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            {
-              authentication.currentUser && 
-              (winner === userId ? `Congratulations, you won!` : `Game Over! The other player won`)
-            }
+    <LinearGradient
+      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
+      style={styles.backgroundGradient}
+    >
+      <SafeAreaView style={styles.container}>
+        {winner && 
+          <View style={styles.card}>
+            <Text style={styles.cardText}>
+              {winner === userId ? `Congratulations, you won!` : `Game Over! The other player won`}
+            </Text>
+          </View>
+        }
+        
+        <View style={styles.card}>
+          <Text style={styles.cardText}>
+            {turn ? `Your turn` : "Other player's Turn"}
           </Text>
         </View>
-      }
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>
-          {turn ? `Your turn` : "Other player's Turn"}
-        </Text>
-      </View>
 
-      <View style={{ marginVertical: 3 }}>
-        <Button title="Resign Game" onPress={handleResign} color="#FF6347" />
-      </View>
-
-      <View ref={boardRef} style={styles.boardTouchableArea} onStartShouldSetResponder={() => true}>
-        <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
-          <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
+        <TouchableOpacity 
+          style={styles.resignButton}
+          onPress={handleResign}
+        >
+          <Text style={styles.resignButtonText}>Resign Game</Text>
         </TouchableOpacity>
-        {Array.isArray(pieces) && pieces.map(piece => (
-          <Image
-            key={piece}
-            source={require('../assets/whiteStone.png')}
-            style={[
-              styles.pieceImage, 
-              boardConst[piece].position,
-            ]}
-          />
-        ))}
 
-        {Array.isArray(pieces2) && pieces2.map((piece, index) => (
-          <Image
-            key={piece}
-            source={require('../assets/blackStone.png')}
-            style={[
-              styles.pieceImage, 
-              boardConst[piece].position,
-              (pieces2 && index === pieces2.length - 1 && turn) ? styles.lastPlayed : null,
-            ]}
-          />
-        ))}
-      </View>
-    </SafeAreaView>
+        <View ref={boardRef} style={styles.boardContainer}>
+          <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
+            <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
+          </TouchableOpacity>
+          {Array.isArray(pieces) && pieces.map(piece => (
+            <Image
+              key={piece}
+              source={require('../assets/whiteStone.png')}
+              style={[
+                styles.pieceImage, 
+                boardConst[piece].position,
+              ]}
+            />
+          ))}
+
+          {Array.isArray(pieces2) && pieces2.map((piece, index) => (
+            <Image
+              key={piece}
+              source={require('../assets/blackStone.png')}
+              style={[
+                styles.pieceImage, 
+                boardConst[piece].position,
+                (pieces2 && index === pieces2.length - 1 && turn) ? styles.lastPlayed : null,
+              ]}
+            />
+          ))}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundGradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
   },
-  banner: {
-    padding: 10,
-    backgroundColor: '#f9f9f9',
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
+    padding: 15,
+    width: '90%',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  bannerText: {
-    fontSize: 20,
+  cardText: {
+    fontSize: 18,
+    color: '#4A148C',
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  resignButton: {
+    backgroundColor: '#FF6347',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  resignButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  boardContainer: {
+    width: 300,
+    height: 300,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginTop: 20,
   },
   boardTouchableArea: {
     width: 300, // Adjust based on your board image size

@@ -5,6 +5,7 @@ import { authentication } from '../database/firebase-config';
 import { nanoid } from 'nanoid'; 
 import DBAccess from '../database/db_access.js';
 import { Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const GameLobby = ({ navigation }) => {
   const [gameId, setGameId] = useState(null);
@@ -63,8 +64,8 @@ const GameLobby = ({ navigation }) => {
 
   const copyJoinLink = () => {
     if (gameId) {
-      const link = `http://localhost:19006/${gameId}`; //todo fix for prod
-      // const link = `https://ygame.io/${gameId}`; //todo fix for prod
+      // const link = `http://localhost:19006/${gameId}`; //todo fix for prod
+      const link = `https://ygame.io/${gameId}`; //todo fix for prod
       navigator.clipboard.writeText(link).then(() => {
         alert('Join link copied to clipboard!');
       }).catch((err) => {
@@ -106,58 +107,95 @@ const GameLobby = ({ navigation }) => {
   }, [navigation, gameId, gameStarted]);
 
   return (
-    <SafeAreaView style={styles.container}>
-        {gameId && <Text style={styles.plainText}>Game ID: {gameId}</Text>}
-        {gameId && !gameStarted && <Text style={styles.plainText}>Waiting for a match...</Text>}
+    <LinearGradient
+      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
+      style={styles.backgroundGradient}
+    >
+      <SafeAreaView style={styles.container}>
+        {gameId && <Text style={styles.title}>Game ID: {gameId}</Text>}
+        {gameId && !gameStarted && <Text style={styles.subtitle}>Waiting for a match...</Text>}
+        
         {!gameId ? (
-          <>
-            <TouchableOpacity style={styles.option} onPress={handleLocalPlay}>
-              <Text style={styles.text}>Local Play</Text>
+          <View style={styles.optionsContainer}>
+            <TouchableOpacity style={styles.button} onPress={handleLocalPlay}>
+              <Text style={styles.buttonText}>Local Play</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.option} onPress={handleCreateChallenge}>
-              <Text style={styles.text}>Create Your Own Challenge</Text>
+            
+            <TouchableOpacity style={styles.button} onPress={handleCreateChallenge}>
+              <Text style={styles.buttonText}>Create Your Own Challenge</Text>
             </TouchableOpacity>
-          </>
+          </View>
         ) : null}
+        
         {!gameId && (
-          <>
+          <View style={styles.joinContainer}>
             <TextInput
               style={styles.input}
               onChangeText={setJoinGameId}
               value={joinGameId}
               placeholder="Enter Game ID to join"
+              placeholderTextColor="rgba(255,255,255,0.6)"
               returnKeyType="done" />
-            <Button title="Join Challenge" onPress={() => handleJoinChallenge()} />
-          </>
+            <TouchableOpacity style={styles.button} onPress={() => handleJoinChallenge()}>
+              <Text style={styles.buttonText}>Join Challenge</Text>
+            </TouchableOpacity>
+          </View>
         )}
+        
         {gameId && (
-          <Button title="Copy Join Link" onPress={copyJoinLink} />
+          <TouchableOpacity style={styles.button} onPress={copyJoinLink}>
+            <Text style={styles.buttonText}>Copy Join Link</Text>
+          </TouchableOpacity>
         )}
       </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 // Styles
 const styles = StyleSheet.create({
+  backgroundGradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    padding: 20,
   },
-  option: {
-    backgroundColor: '#007bff',
-    padding: 15,
-    borderRadius: 5,
+  optionsContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    color: '#ffffff',
+    fontWeight: 'bold',
     marginBottom: 10,
   },
-  text: {
+  subtitle: {
+    fontSize: 18,
     color: '#ffffff',
-    fontSize: 16,
+    marginBottom: 20,
   },
-  plainText: {
+  button: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    marginVertical: 10,
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonText: {
     color: '#000000',
     fontSize: 16,
+    fontWeight: 'bold',
   },
   input: {
     width: '70%',
@@ -166,9 +204,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
   },
-  waitingText: {
-    marginTop: 20,
-    fontSize: 16,
+  joinContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
   },
 });
 

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { ScrollView, View, Text, Button, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const FrontPage = ({ navigation }) => {
   const handleDeepLink = (event) => {
@@ -26,67 +27,167 @@ const FrontPage = ({ navigation }) => {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Welcome to the Y Game</Text>
-      <Text style={styles.description}>
-        Y is a board game known for its strategic play. 
-        It's played on a triangular board with hexagonal spaces. The objective 
-        is to connect all three sides of the board with your pieces.
-      </Text>
-      <Text style={styles.rulesTitle}>Rules:</Text>
-      <Text style={styles.rules}>
-        1. Players take turns placing one stone of their color on the board.{"\n"}
-        2. The first player to connect all three sides (with a continuous string of pieces) wins.{"\n"}
-        3. The corner's count as the two sides it connects. 
-      </Text>
-      <Text style={styles.note}>
-        Y is praised for its simplicity and complexity. Learn more @ 
-        <a href="https://en.wikipedia.org/wiki/Y_(game)" rel="noreferrer"> Wiki </a>        
-      </Text>
-      <Button
-        title="Go to Lobby"
-        onPress={() => navigation.navigate('GameLobby')}
-        color="#007bff"
-      />
-    </ScrollView>
+    <LinearGradient
+      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
+      style={styles.backgroundGradient}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>The Game of Y</Text>
+          <View style={styles.divider} />
+          
+          <Text style={styles.subtitle}>
+            Connect the Dots, Shape Your Strategy
+          </Text>
+
+          <View style={styles.card}>
+            <Text style={styles.description}>
+              Y is an elegant abstract strategy game played on a triangular board. 
+              Connect all three sides of the board with your pieces to claim victory 
+              in this beautifully simple yet deeply strategic game.
+            </Text>
+          </View>
+
+          <View style={styles.rulesCard}>
+            <Text style={styles.rulesTitle}>How to Play</Text>
+            <Text style={styles.rules}>
+              • Players take turns placing stones on the board{"\n"}
+              • Connect all three sides to win{"\n"}
+              • Corners count for both adjacent sides{"\n"}
+              • First to create a continuous path wins
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.playButton}
+            onPress={() => navigation.navigate('GameLobby')}
+          >
+            <Text style={styles.playButtonText}>PLAY NOW</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.note}>
+            Learn more about the game on{' '}
+            <Text 
+              style={styles.link}
+              onPress={() => Linking.openURL('https://en.wikipedia.org/wiki/Y_(game)')}
+            >
+              Wikipedia
+            </Text>
+          </Text>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundGradient: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  content: {
+    width: '90%',
+    maxWidth: 600,
     padding: 20,
-    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
+    fontSize: 48,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#ffffff',
     textAlign: 'center',
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+  },
+  divider: {
+    height: 3,
+    width: 60,
+    backgroundColor: '#ffffff',
+    alignSelf: 'center',
+    marginBottom: 20,
+    borderRadius: 2,
+  },
+  subtitle: {
+    fontSize: 24,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 30,
+    fontStyle: 'italic',
+  },
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   description: {
     fontSize: 16,
+    color: '#4A148C',
+    lineHeight: 24,
     textAlign: 'center',
-    marginBottom: 10,
+  },
+  rulesCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   rulesTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 20,
+    color: '#4A148C',
     marginBottom: 10,
+    textAlign: 'center',
   },
   rules: {
     fontSize: 16,
-    textAlign: 'left',
-    marginBottom: 10,
+    color: '#4A148C',
+    lineHeight: 24,
+  },
+  playButton: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  playButtonText: {
+    color: '#4A148C',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   note: {
-    fontSize: 16,
-    fontStyle: 'italic',
+    fontSize: 14,
+    color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 20,
+  },
+  link: {
+    color: '#ffffff',
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
 });
 
