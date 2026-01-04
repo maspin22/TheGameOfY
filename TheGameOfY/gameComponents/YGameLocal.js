@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { SafeAreaView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { findClosestPiece, boardConst } from './GameBoard';
-import { LinearGradient } from 'expo-linear-gradient';
 import GameBoardContainer from './GameBoardContainer';
 
-const YGameLocal = () => {
+const YGameLocal = ({ navigation }) => {
   const [playerTurn, setPlayerTurn] = useState(true); // true for Player 1's turn, false for Player 2
   const [board, setBoard] = useState(boardConst);
   const [pieces, setPieces] = useState([]); // Array for all pieces
@@ -109,38 +108,86 @@ const YGameLocal = () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
-      style={styles.backgroundGradient}
-    >
+    <View style={styles.backgroundContainer}>
       <SafeAreaView style={styles.container}>
+        {/* Retro Navigation Banner */}
+        <View style={styles.navBanner}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>◄ EXIT</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.navTitle}>
+            <Text style={styles.navTitleText}>LOCAL MATCH</Text>
+          </View>
+          
+          <View style={styles.spacer} />
+        </View>
+
         <GameBoardContainer
           boardRef={boardRef}
           onBoardPress={handlePress}
           pieces={player1Pieces}
           pieces2={player2Pieces}
-          playerTurnText={winner ? `Player ${winner} Wins!` : (playerTurn ? "Player 1's Turn" : "Player 2's Turn")}
-          actionButtonText="Undo"
+          playerTurnText={winner ? `PLAYER ${winner} WINS!` : (playerTurn ? "PLAYER 1's TURN" : "PLAYER 2's TURN")}
+          actionButtonText="UNDO"
           onActionButtonPress={handleBackPress}
           winner={winner}
-          winnerText={`Player ${winner} Wins!`}
+          winnerText={`★ PLAYER ${winner} WINS! ★`}
           lastPlayedIndex={pieces.length - 1}
           showLastPlayed={true}
         />
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundGradient: {
+  backgroundContainer: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+  },
+  
+  // Navigation Banner
+  navBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#00ff00',
+    padding: 15,
+    marginBottom: 20,
+  },
+  backButton: {
+    paddingHorizontal: 10,
+  },
+  backButtonText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#ffff00',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  navTitle: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  navTitleText: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    color: '#00ffff',
+    fontWeight: 'bold',
+    letterSpacing: 3,
+  },
+  spacer: {
+    width: 60, // Same width as back button for centering
   },
 });
 
