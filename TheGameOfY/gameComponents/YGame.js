@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
+import { SafeAreaView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { findClosestPiece, boardConst } from './GameBoard';
 import { authentication } from '../database/firebase-config';
 import DBAccess from '../database/db_access.js';
-import { LinearGradient } from 'expo-linear-gradient';
+import GameBoardContainer from './GameBoardContainer';
 
-const YGame = ({ route }) => {
+const YGame = ({ route, navigation }) => {
   const { gameId, userId } = route.params;
   console.log('Route gameId:', gameId); 
   console.log('Route userId:', userId); 
@@ -97,156 +97,87 @@ const YGame = ({ route }) => {
   }, [gameId, otherPlayer]);
 
   return (
-    <LinearGradient
-      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
-      style={styles.backgroundGradient}
-    >
+    <View style={styles.backgroundContainer}>
       <SafeAreaView style={styles.container}>
-        {winner && 
-          <View style={styles.card}>
-            <Text style={styles.cardText}>
-              {winner === userId ? `Congratulations, you won!` : `Game Over! The other player won`}
-            </Text>
-          </View>
-        }
-        
-        <View style={styles.card}>
-          <Text style={styles.cardText}>
-            {turn ? `Your turn` : "Other player's Turn"}
-          </Text>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.resignButton}
-          onPress={handleResign}
-        >
-          <Text style={styles.resignButtonText}>Resign Game</Text>
-        </TouchableOpacity>
-
-        <View ref={boardRef} style={styles.boardContainer}>
-          <TouchableOpacity onPress={handleMove} style={styles.boardImageWrapper}>
-            <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
+        {/* Retro Navigation Banner */}
+        <View style={styles.navBanner}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>◄ EXIT</Text>
           </TouchableOpacity>
-          {Array.isArray(pieces) && pieces.map(piece => (
-            <Image
-              key={piece}
-              source={require('../assets/whiteStone.png')}
-              style={[
-                styles.pieceImage, 
-                boardConst[piece].position,
-              ]}
-            />
-          ))}
-
-          {Array.isArray(pieces2) && pieces2.map((piece, index) => (
-            <Image
-              key={piece}
-              source={require('../assets/blackStone.png')}
-              style={[
-                styles.pieceImage, 
-                boardConst[piece].position,
-                (pieces2 && index === pieces2.length - 1 && turn) ? styles.lastPlayed : null,
-              ]}
-            />
-          ))}
+          
+          <View style={styles.navTitle}>
+            <Text style={styles.navTitleText}>ONLINE MATCH</Text>
+          </View>
+          
+          <View style={styles.spacer} />
         </View>
+
+        <GameBoardContainer
+          boardRef={boardRef}
+          onBoardPress={handleMove}
+          pieces={pieces}
+          pieces2={pieces2}
+          playerTurnText={turn ? `YOUR TURN` : "OPPONENT'S TURN"}
+          actionButtonText="RESIGN"
+          onActionButtonPress={handleResign}
+          winner={winner}
+          winnerText={winner === userId ? `★ VICTORY ★` : `GAME OVER`}
+          lastPlayedIndex={pieces2 && turn ? pieces2.length - 1 : null}
+          showLastPlayed={true}
+        />
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundGradient: {
+  backgroundContainer: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
   },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 15,
-    width: '90%',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  cardText: {
-    fontSize: 18,
-    color: '#4A148C',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  resignButton: {
-    backgroundColor: '#FF6347',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  resignButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  boardContainer: {
-    width: 300,
-    height: 300,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 15,
-    overflow: 'hidden',
-    marginTop: 20,
-  },
-  boardTouchableArea: {
-    width: 300, // Adjust based on your board image size
-    height: 300,
-    position: 'relative', // Allows absolute positioning within
-  },
-  boardImageWrapper: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f9f9f9',
-  },
-  boardImage: {
-    width: '100%',
-    height: '100%',
-  },
-  pieceImage: {
-    width: 20, // Adjust based on your piece image size
-    height: 20,
-    position: 'absolute',
-    borderRadius: 50, // Make the image circular
-  },
-  pieceImage: {
-    width: 20, // Adjust based on your piece image size
-    height: 20,
-    position: 'absolute',
-    color: '#FF0000'
-  },
-  lastPlayed: {
-    shadowColor: '#800080', // Purple glow
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 10,
-    shadowRadius: 6, // Adjust for a more subtle effect
-    elevation: 100, // For Android shadow
-    borderRadius: 50, // Make the shadow circular
-  },
-  decisionBanner: {
+  
+  // Navigation Banner
+  navBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 10,
-  }
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#00ff00',
+    padding: 15,
+    marginBottom: 20,
+  },
+  backButton: {
+    paddingHorizontal: 10,
+  },
+  backButtonText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#ffff00',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  navTitle: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  navTitleText: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    color: '#00ffff',
+    fontWeight: 'bold',
+    letterSpacing: 3,
+  },
+  spacer: {
+    width: 60, // Same width as back button for centering
+  },
 });
 
 export default YGame;
