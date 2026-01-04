@@ -11,14 +11,61 @@ const Stack = createNativeStackNavigator();
 
 function App() {
   return (
-    // <NavigationContainer linking={linkingConfig}>
     <ErrorBoundary>
       <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen name="FrontPage" component={FrontPage} options={{ title: 'Home' }}/>
-          <Stack.Screen name="GameLobby" component={GameLobby} options={{ title: 'Lobby' }}/>
-          <Stack.Screen name="YGame" component={YGame} options={{ title: 'Y Game' }}/>
-          <Stack.Screen name="YGameLocal" component={YGameLocal} options={{ title: 'Y Game Local' }}/>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#0a0a0a',
+              borderBottomWidth: 4,
+              borderBottomColor: '#00ff00',
+            },
+            headerTintColor: '#00ffff',
+            headerTitleStyle: {
+              fontFamily: 'monospace',
+              fontWeight: 'bold',
+              fontSize: 18,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+            },
+            headerBackTitle: '◄',
+            headerBackTitleStyle: {
+              fontFamily: 'monospace',
+              fontSize: 20,
+            },
+            contentStyle: {
+              backgroundColor: '#0a0a0a',
+            },
+          }}
+        >
+          <Stack.Screen 
+            name="FrontPage" 
+            component={FrontPage} 
+            options={{ 
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen 
+            name="GameLobby" 
+            component={GameLobby} 
+            options={{ 
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen 
+            name="YGame" 
+            component={YGame} 
+            options={{ 
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen 
+            name="YGameLocal" 
+            component={YGameLocal} 
+            options={{ 
+              headerShown: false,
+            }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </ErrorBoundary>

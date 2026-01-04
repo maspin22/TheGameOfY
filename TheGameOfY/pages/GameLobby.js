@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, StyleSheet, Button, View, TextInput } from 'react-native';
+import { SafeAreaView, Text, TouchableOpacity, StyleSheet, View, TextInput } from 'react-native';
 import { signInWithGoogle } from './SignIn';
 import { authentication } from '../database/firebase-config';
 import { nanoid } from 'nanoid'; 
 import DBAccess from '../database/db_access.js';
 import { Linking } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const GameLobby = ({ navigation }) => {
   const [gameId, setGameId] = useState(null);
@@ -88,14 +87,6 @@ const GameLobby = ({ navigation }) => {
       dbAccess.hasGameStarted(gameId, setGameStarted, dbAccess.cleanUpWaiting)
     ];
 
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={{ paddingRight: 10 }}>
-          <Button onPress={() => handleSignIn(() => { })} title="Sign In" color="#007bff" />
-        </View>
-      )
-    });
-
     if (gameId && gameStarted) {
       navigation.navigate('YGame', { gameId: gameId, userId: dbAccess.getUserId() });
     }
@@ -107,107 +98,297 @@ const GameLobby = ({ navigation }) => {
   }, [navigation, gameId, gameStarted]);
 
   return (
-    <LinearGradient
-      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
-      style={styles.backgroundGradient}
-    >
+    <View style={styles.backgroundContainer}>
       <SafeAreaView style={styles.container}>
-        {gameId && <Text style={styles.title}>Game ID: {gameId}</Text>}
-        {gameId && !gameStarted && <Text style={styles.subtitle}>Waiting for a match...</Text>}
+        {/* Retro Navigation Banner */}
+        <View style={styles.navBanner}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>◄ BACK</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.navTitle}>
+            <Text style={styles.navTitleText}>GAME LOBBY</Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.signInButton}
+            onPress={() => handleSignIn(() => { })}
+          >
+            <Text style={styles.signInButtonText}>SIGN IN</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Game Status Display */}
+        {gameId && (
+          <View style={styles.statusBox}>
+            <Text style={styles.statusLabel}>╔═══ GAME STATUS ═══╗</Text>
+            <Text style={styles.gameIdText}>ID: {gameId}</Text>
+            {!gameStarted && (
+              <Text style={styles.waitingText}>⟳ WAITING FOR OPPONENT...</Text>
+            )}
+            <Text style={styles.statusLabel}>╚═══════════════════╝</Text>
+          </View>
+        )}
         
         {!gameId ? (
           <View style={styles.optionsContainer}>
+            <Text style={styles.selectModeText}>┌─ SELECT MODE ─┐</Text>
+            
             <TouchableOpacity style={styles.button} onPress={handleLocalPlay}>
-              <Text style={styles.buttonText}>Local Play</Text>
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonIcon}>🎮</Text>
+                <Text style={styles.buttonText}>LOCAL PLAY</Text>
+                <Text style={styles.buttonSubtext}>2 Players • Same Device</Text>
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.button} onPress={handleCreateChallenge}>
-              <Text style={styles.buttonText}>Create Your Own Challenge</Text>
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonIcon}>🌐</Text>
+                <Text style={styles.buttonText}>CREATE CHALLENGE</Text>
+                <Text style={styles.buttonSubtext}>Online • Get Link</Text>
+              </View>
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <Text style={styles.dividerText}>─── OR ───</Text>
+            </View>
+
+            <View style={styles.joinBox}>
+              <Text style={styles.joinLabel}>JOIN EXISTING GAME:</Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={setJoinGameId}
+                value={joinGameId}
+                placeholder="ENTER GAME ID"
+                placeholderTextColor="#00ff00"
+              />
+              <TouchableOpacity 
+                style={[styles.button, styles.joinButton]} 
+                onPress={() => handleJoinChallenge()}
+              >
+                <View style={styles.buttonContent}>
+                  <Text style={styles.buttonText}>► JOIN GAME</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : null}
         
-        {!gameId && (
-          <View style={styles.joinContainer}>
-            <TextInput
-              style={styles.input}
-              onChangeText={setJoinGameId}
-              value={joinGameId}
-              placeholder="Enter Game ID to join"
-              placeholderTextColor="rgba(255,255,255,0.6)"
-              returnKeyType="done" />
-            <TouchableOpacity style={styles.button} onPress={() => handleJoinChallenge()}>
-              <Text style={styles.buttonText}>Join Challenge</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        
         {gameId && (
-          <TouchableOpacity style={styles.button} onPress={copyJoinLink}>
-            <Text style={styles.buttonText}>Copy Join Link</Text>
+          <TouchableOpacity style={styles.copyButton} onPress={copyJoinLink}>
+            <Text style={styles.copyButtonText}>📋 COPY INVITE LINK</Text>
           </TouchableOpacity>
         )}
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
 // Styles
 const styles = StyleSheet.create({
-  backgroundGradient: {
+  backgroundContainer: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
   },
-  optionsContainer: {
-    width: '100%',
-    maxWidth: 400,
+  
+  // Navigation Banner
+  navBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#ffffff',
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#00ff00',
+    padding: 15,
     marginBottom: 20,
   },
-  button: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 30,
+  backButton: {
+    paddingHorizontal: 10,
+  },
+  backButtonText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#ffff00',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  navTitle: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  navTitleText: {
+    fontFamily: 'monospace',
+    fontSize: 18,
+    color: '#00ffff',
+    fontWeight: 'bold',
+    letterSpacing: 3,
+  },
+  signInButton: {
+    backgroundColor: '#ff00ff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  signInButtonText: {
+    fontFamily: 'monospace',
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+
+  // Status Box
+  statusBox: {
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#ffff00',
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  statusLabel: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#ffff00',
+    letterSpacing: 1,
+    marginVertical: 5,
+  },
+  gameIdText: {
+    fontFamily: 'monospace',
+    fontSize: 20,
+    color: '#00ffff',
+    fontWeight: 'bold',
+    letterSpacing: 3,
     marginVertical: 10,
-    width: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+  },
+  waitingText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#00ff00',
+    letterSpacing: 2,
+    marginVertical: 10,
+  },
+
+  // Options Container
+  optionsContainer: {
+    width: '100%',
+    maxWidth: 500,
+    alignSelf: 'center',
+  },
+  selectModeText: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    color: '#00ffff',
+    textAlign: 'center',
+    marginBottom: 20,
+    letterSpacing: 2,
+  },
+
+  // Buttons
+  button: {
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#00ff00',
+    marginVertical: 10,
+    overflow: 'hidden',
+  },
+  buttonContent: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  buttonIcon: {
+    fontSize: 30,
+    marginBottom: 10,
   },
   buttonText: {
-    color: '#000000',
-    fontSize: 16,
+    fontFamily: 'monospace',
+    fontSize: 18,
+    color: '#00ffff',
     fontWeight: 'bold',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
+  buttonSubtext: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#00ff00',
+    letterSpacing: 1,
+    marginTop: 5,
+  },
+
+  // Divider
+  divider: {
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+  dividerText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#888888',
+    letterSpacing: 2,
+  },
+
+  // Join Box
+  joinBox: {
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#ff00ff',
+    padding: 20,
+    marginTop: 10,
+  },
+  joinLabel: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#ff00ff',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   input: {
-    width: '70%',
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
+    backgroundColor: '#000000',
+    borderWidth: 3,
+    borderColor: '#00ff00',
+    color: '#00ff00',
+    fontFamily: 'monospace',
+    fontSize: 16,
+    padding: 15,
+    marginBottom: 15,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
-  joinContainer: {
-    width: '100%',
+  joinButton: {
+    borderColor: '#ff00ff',
+    marginVertical: 0,
+  },
+
+  // Copy Button
+  copyButton: {
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#ffff00',
+    padding: 20,
+    marginTop: 20,
+    alignSelf: 'center',
+    width: '90%',
     maxWidth: 400,
-    alignItems: 'center',
+  },
+  copyButtonText: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    color: '#ffff00',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    textAlign: 'center',
   },
 });
 

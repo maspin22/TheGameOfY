@@ -1,9 +1,14 @@
-import React, { useEffect } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Linking } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const FrontPage = ({ navigation }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
   const handleDeepLink = (event) => {
     const url = event.url;
     const gameId = url.replace(/.*?:\/\//g, '').split('/')[1];
@@ -15,6 +20,26 @@ const FrontPage = ({ navigation }) => {
   };
   
   useEffect(() => {
+    // Entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     Linking.addEventListener('url', handleDeepLink);
     Linking.getInitialURL().then((url) => {
       if (url) {
@@ -27,167 +52,349 @@ const FrontPage = ({ navigation }) => {
   }, []);
 
   return (
-    <LinearGradient
-      colors={['#4A148C', '#7B1FA2', '#9C27B0']}
-      style={styles.backgroundGradient}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.title}>The Game of Y</Text>
-          <View style={styles.divider} />
-          
-          <Text style={styles.subtitle}>
-            Connect the Dots, Shape Your Strategy
-          </Text>
-
-          <View style={styles.card}>
-            <Text style={styles.description}>
-              Y is an elegant abstract strategy game played on a triangular board. 
-              Connect all three sides of the board with your pieces to claim victory 
-              in this beautifully simple yet deeply strategic game.
-            </Text>
+    <View style={styles.backgroundContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ]
+            }
+          ]}
+        >
+          {/* Consolidated Retro Banner */}
+          <View style={styles.banner}>
+            <Text style={styles.insertCoin}>★ INSERT COIN ★</Text>
+            <Text style={styles.gameTitle}>GAME OF Y</Text>
+            <Text style={styles.subtitle}>⚔ CONNECT 3 SIDES TO WIN ⚔</Text>
           </View>
 
-          <View style={styles.rulesCard}>
-            <Text style={styles.rulesTitle}>How to Play</Text>
-            <Text style={styles.rules}>
-              • Players take turns placing stones on the board{"\n"}
-              • Connect all three sides to win{"\n"}
-              • Corners count for both adjacent sides{"\n"}
-              • First to create a continuous path wins
-            </Text>
-          </View>
-
+          {/* Arcade-style Play Button */}
           <TouchableOpacity
             style={styles.playButton}
             onPress={() => navigation.navigate('GameLobby')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.playButtonText}>PLAY NOW</Text>
+            <View style={styles.buttonBorder}>
+              <Text style={styles.playButtonText}>▶ PRESS START ◀</Text>
+              <Text style={styles.blinkText}>1 PLAYER / 2 PLAYER</Text>
+            </View>
           </TouchableOpacity>
 
-          <Text style={styles.note}>
-            Learn more about the game on{' '}
-            <Text 
-              style={styles.link}
-              onPress={() => Linking.openURL('https://en.wikipedia.org/wiki/Y_(game)')}
-            >
-              Wikipedia
-            </Text>
-          </Text>
-        </View>
+          {/* Retro Stats/Features */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>╔════════╗</Text>
+              <Text style={styles.statTitle}>QUICK PLAY</Text>
+              <Text style={styles.statLabel}>╚════════╝</Text>
+              <Text style={styles.statValue}>★★★★★</Text>
+            </View>
+            
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>╔════════╗</Text>
+              <Text style={styles.statTitle}>STRATEGY</Text>
+              <Text style={styles.statLabel}>╚════════╝</Text>
+              <Text style={styles.statValue}>★★★★★</Text>
+            </View>
+          </View>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>╔════════╗</Text>
+              <Text style={styles.statTitle}>ONLINE</Text>
+              <Text style={styles.statLabel}>╚════════╝</Text>
+              <Text style={styles.statValue}>ENABLED</Text>
+            </View>
+            
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>╔════════╗</Text>
+              <Text style={styles.statTitle}>LOCAL</Text>
+              <Text style={styles.statLabel}>╚════════╝</Text>
+              <Text style={styles.statValue}>ENABLED</Text>
+            </View>
+          </View>
+
+          {/* About Box */}
+          <View style={styles.infoBox}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>┌─── ABOUT ───┐</Text>
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoText}>
+                Y is an abstract strategy game played on a triangular board.
+                {'\n\n'}
+                Connect all three sides with your pieces to claim victory!
+              </Text>
+            </View>
+            <View style={styles.infoFooter}>
+              <Text style={styles.infoTitle}>└──────────────┘</Text>
+            </View>
+          </View>
+
+          {/* Rules Box */}
+          <View style={styles.infoBox}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>┌─ HOW TO PLAY ─┐</Text>
+            </View>
+            <View style={styles.rulesContent}>
+              {[
+                '▸ Players take turns placing stones',
+                '▸ Connect all three board sides',
+                '▸ Corners count for both sides',
+                '▸ First to connect wins!',
+              ].map((rule, index) => (
+                <View key={index} style={styles.ruleRow}>
+                  <Text style={styles.ruleText}>{rule}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.infoFooter}>
+              <Text style={styles.infoTitle}>└──────────────┘</Text>
+            </View>
+          </View>
+
+          {/* Score Display Style Footer */}
+          <View style={styles.footer}>
+            <View style={styles.scoreboard}>
+              <Text style={styles.scoreText}>━━━━━━━━━━━━━━━━━━━</Text>
+              <Text style={styles.footerText}>
+                MORE INFO:{' '}
+                <Text 
+                  style={styles.link}
+                  onPress={() => Linking.openURL('https://en.wikipedia.org/wiki/Y_(game)')}
+                >
+                  WIKIPEDIA
+                </Text>
+              </Text>
+              <Text style={styles.scoreText}>━━━━━━━━━━━━━━━━━━━</Text>
+              <Text style={styles.copyright}>© 2026 RETRO GAMES</Text>
+            </View>
+          </View>
+        </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundGradient: {
+  backgroundContainer: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#0a0a0a', // Deep black like old CRT screens
   },
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 20,
   },
   content: {
-    width: '90%',
+    width: '100%',
     maxWidth: 600,
-    padding: 20,
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
+  
+  // Consolidated Banner
+  banner: {
+    marginBottom: 25,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#00ff00',
+    padding: 20,
+    alignItems: 'center',
+  },
+  insertCoin: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#ffff00',
     marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: -1, height: 1 },
+    letterSpacing: 3,
+    textShadowColor: '#ffff00',
+    textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
-  divider: {
-    height: 3,
-    width: 60,
-    backgroundColor: '#ffffff',
-    alignSelf: 'center',
-    marginBottom: 20,
-    borderRadius: 2,
+  gameTitle: {
+    fontSize: 36,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#00ffff',
+    letterSpacing: 6,
+    marginVertical: 5,
+    textShadowColor: '#00ffff',
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 0,
   },
   subtitle: {
-    fontSize: 24,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 30,
-    fontStyle: 'italic',
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#ff00ff',
+    marginTop: 8,
+    letterSpacing: 2,
   },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  description: {
-    fontSize: 16,
-    color: '#4A148C',
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  rulesCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  rulesTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4A148C',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  rules: {
-    fontSize: 16,
-    color: '#4A148C',
-    lineHeight: 24,
-  },
+
+  // Arcade Button
   playButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginBottom: 30,
+    borderWidth: 6,
+    borderColor: '#ff0000',
+    backgroundColor: '#ff0000',
+    borderRadius: 0,
+  },
+  buttonBorder: {
+    backgroundColor: '#000000',
+    borderWidth: 3,
+    borderColor: '#ff0000',
+    padding: 20,
+    alignItems: 'center',
   },
   playButtonText: {
-    color: '#4A148C',
-    fontSize: 18,
+    color: '#ffff00',
+    fontSize: 22,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    letterSpacing: 3,
+    textShadowColor: '#ffff00',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
+  },
+  blinkText: {
+    color: '#00ff00',
+    fontSize: 12,
+    fontFamily: 'monospace',
+    marginTop: 8,
+    letterSpacing: 2,
+  },
+
+  // Stats Grid
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statBox: {
+    flex: 1,
+    marginHorizontal: 5,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 3,
+    borderColor: '#00ffff',
+    padding: 15,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: '#00ffff',
+    letterSpacing: 1,
+  },
+  statTitle: {
+    fontSize: 14,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginVertical: 5,
+    letterSpacing: 1,
+  },
+  statValue: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#ffff00',
+    marginTop: 5,
+    letterSpacing: 1,
+  },
+
+  // Info Boxes
+  infoBox: {
+    marginBottom: 20,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 4,
+    borderColor: '#ff00ff',
+  },
+  infoHeader: {
+    backgroundColor: '#ff00ff',
+    padding: 8,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontFamily: 'monospace',
+    color: '#ffffff',
     fontWeight: 'bold',
     textAlign: 'center',
+    letterSpacing: 2,
   },
-  note: {
+  infoContent: {
+    padding: 20,
+  },
+  infoText: {
     fontSize: 14,
-    color: '#ffffff',
+    fontFamily: 'monospace',
+    color: '#00ff00',
+    lineHeight: 22,
+    letterSpacing: 1,
+  },
+  infoFooter: {
+    padding: 4,
+  },
+
+  // Rules
+  rulesContent: {
+    padding: 20,
+  },
+  ruleRow: {
+    marginBottom: 12,
+  },
+  ruleText: {
+    fontSize: 14,
+    fontFamily: 'monospace',
+    color: '#00ff00',
+    lineHeight: 22,
+    letterSpacing: 1,
+  },
+
+  // Footer Scoreboard
+  footer: {
+    marginTop: 30,
+    marginBottom: 20,
+  },
+  scoreboard: {
+    backgroundColor: '#000000',
+    borderWidth: 4,
+    borderColor: '#ffff00',
+    padding: 20,
+    alignItems: 'center',
+  },
+  scoreText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#ffff00',
+    letterSpacing: 1,
+    marginVertical: 5,
+  },
+  footerText: {
+    fontSize: 14,
+    fontFamily: 'monospace',
+    color: '#00ffff',
     textAlign: 'center',
+    marginVertical: 10,
+    letterSpacing: 1,
   },
   link: {
-    color: '#ffffff',
-    textDecorationLine: 'underline',
+    color: '#ff00ff',
+    fontFamily: 'monospace',
     fontWeight: 'bold',
+    textDecorationLine: 'underline',
+    letterSpacing: 2,
+  },
+  copyright: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: '#888888',
+    marginTop: 10,
+    letterSpacing: 2,
   },
 });
 
