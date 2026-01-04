@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Image, TouchableOpacity, Button, View, Text } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { findClosestPiece, boardConst } from './GameBoard';
 import { LinearGradient } from 'expo-linear-gradient';
+import GameBoardContainer from './GameBoardContainer';
 
 const YGameLocal = () => {
   const [playerTurn, setPlayerTurn] = useState(true); // true for Player 1's turn, false for Player 2
@@ -113,43 +114,19 @@ const YGameLocal = () => {
       style={styles.backgroundGradient}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.card}>
-          {winner ? (
-            <Text style={styles.cardText}>
-              Player {winner} Wins!
-            </Text>
-          ) : (
-            <Text style={styles.cardText}>
-              {playerTurn ? "Player 1's Turn" : "Player 2's Turn"}
-            </Text>
-          )}
-        </View>
-
-        <TouchableOpacity 
-          style={styles.resignButton}
-          onPress={handleBackPress}
-        >
-          <Text style={styles.resignButtonText}>Undo</Text>
-        </TouchableOpacity>
-
-        <View ref={boardRef} style={styles.boardContainer}>
-          <TouchableOpacity onPress={handlePress} style={styles.boardImageWrapper}>
-            <Image source={require('../assets/Game_of_Y_Mask_Board.svg')} style={styles.boardImage} />
-          </TouchableOpacity>
-          {pieces.map((pieceId, index) => (
-            <Image
-              key={pieceId}
-              source={player1Pieces.includes(pieceId) ? 
-                require('../assets/blackStone.png') : 
-                require('../assets/whiteStone.png')}
-              style={[
-                styles.pieceImage,
-                boardConst[pieceId].position,
-                (index === pieces.length - 1) ? styles.lastPlayed : null,
-              ]}
-            />
-          ))}
-        </View>
+        <GameBoardContainer
+          boardRef={boardRef}
+          onBoardPress={handlePress}
+          pieces={player1Pieces}
+          pieces2={player2Pieces}
+          playerTurnText={winner ? `Player ${winner} Wins!` : (playerTurn ? "Player 1's Turn" : "Player 2's Turn")}
+          actionButtonText="Undo"
+          onActionButtonPress={handleBackPress}
+          winner={winner}
+          winnerText={`Player ${winner} Wins!`}
+          lastPlayedIndex={pieces.length - 1}
+          showLastPlayed={true}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -164,76 +141,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-  },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 15,
-    padding: 15,
-    width: '90%',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  cardText: {
-    fontSize: 18,
-    color: '#4A148C',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  resignButton: {
-    backgroundColor: '#FF6347',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  resignButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  boardContainer: {
-    width: 300,
-    height: 300,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 15,
-    overflow: 'hidden',
-    marginTop: 20,
-  },
-  boardTouchableArea: {
-    width: 300, // Adjust based on your board image size
-    height: 300,
-    position: 'relative', // Allows absolute positioning within
-  },
-  boardImageWrapper: {
-    width: '100%',
-    height: '100%',
-  },
-  boardImage: {
-    width: '100%',
-    height: '100%',
-  },
-  pieceImage: {
-    width: 20, // Adjust based on your piece image size
-    height: 20,
-    position: 'absolute',
-    borderRadius: 50, /* Make the image circular */
-  },
-  lastPlayed: {
-    shadowColor: '#800080', // Purple glow
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 10,
-    shadowRadius: 6, // Adjust for a more subtle effect
-    elevation: 100, // For Android shadow
-    borderRadius: 50, // Make the shadow circular
   },
 });
 
